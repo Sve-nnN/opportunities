@@ -1,149 +1,147 @@
 # Project Research Summary
 
-**Project:** Opportunities Hub
-**Domain:** Personal single-user aggregation dashboard (external GitHub data ingestion + application tracking), self-hosted
+**Project:** opportunities (personal internship/benefits aggregation dashboard + application tracker)
+**Domain:** Personal single-user dashboard — live GitHub data aggregation + application tracking, self-hosted on Dokploy/Hetzner
 **Researched:** 2026-09-07
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This is a small full-stack web app, not a scraper script: a scheduled ingestion layer pulls three community-maintained GitHub sources (two markdown tables, one JSON catalog) into a Postgres cache, and a server-rendered dashboard reads only from that cache — never live from GitHub on page load. The recommended stack is Next.js 16 (App Router, `output: 'standalone'`) + Drizzle ORM + Postgres, built specifically to run as a Docker container on Juan's own Dokploy/Hetzner host rather than Vercel; nothing in the stack depends on Vercel-only primitives.
+This is a single-user ETL-into-cache dashboard: three external GitHub sources (two community-maintained markdown tables — `Summer2027-Internships`, `underclassmen-opportunities` — and one JSON catalog, `student-benefits`) are periodically fetched, parsed, normalized, and stored in Postgres, and the UI/API only ever reads from that cache. This pattern is well-established for GitHub-scraping dashboards: it decouples dashboard uptime from GitHub's availability and rate limits, and it is the only architecture that satisfies the project's own explicit requirements (live data, cross-device sync, no localStorage). The recommended stack — Next.js 16 (App Router) + React 19 + Drizzle ORM + Postgres + remark/remark-gfm for table parsing — is chosen specifically to avoid Vercel lock-in and Docker-native-binary pitfalls, fitting a self-hosted Dokploy/Hetzner deployment.
 
-The core architectural decision is "pull-and-cache, never fetch-on-request": GitHub's unauthenticated rate limit (60 req/hr) and the fragility of hand-parsing community-edited markdown tables both point the same direction — ingest on a schedule (hourly is plenty), normalize into a common schema keyed by a stable `external_id`, and serve fast DB reads to the UI. Application tracking (status + notes) is a second, independent data path into the same Postgres instance, decoupled from the refresh job so a sync can never clobber Juan's own tracked state — this also directly satisfies the cross-device sync requirement, since it's DB-backed from day one, not localStorage.
+The core build has two independent halves that share one piece of infrastructure: (1) ingestion — three source parsers feeding a normalization layer into cache tables, driven by a scheduled job with a manual "refresh now" trigger, and (2) application tracking — a small, DB-backed CRUD layer for status/notes, keyed to a stable `external_id` (never a DB auto-increment) so tracked applications survive cache re-syncs. Because both features need the same Postgres instance, building the persistence layer once satisfies both the "personal tracking" and "cross-device sync" requirements simultaneously.
 
-The main risks are all upstream-data risks, not infra risks: GitHub markdown tables drift format without warning (mitigated by preferring SimplifyJobs' underlying `listings.json` over its rendered README, and using a real markdown-table parser — `remark` + `remark-gfm` — for the one source that has no JSON alternative), and GitHub's unauthenticated rate limit is trivially exhausted by naive per-request fetching (mitigated by a PAT + scheduled sync + ETags). Deploy-side, the only real gotcha is Cloudflare/Traefik SSL-mode mismatch, which is a one-time config check, not an ongoing concern.
+The main risks are all foreseeable and cheap to prevent up front, but expensive to retrofit: GitHub's 60/hour unauthenticated rate limit (fix: PAT + scheduled fetch, never fetch-on-request), markdown table parsing fragility on community-edited README tables (fix: use SimplifyJobs' underlying `listings.json` instead of scraping their rendered table; use a real markdown parser, not regex, for `underclassmen-opportunities`), and Cloudflare/Traefik SSL misconfiguration at deploy time. All three are "decide correctly in Phase 1, or rebuild later" issues, not incremental refinements — the architecture and pitfalls research agree these belong in the ingestion/fetch-layer phase itself, not bolted on afterward.
 
 ## Key Findings
 
 ### Recommended Stack
 
-Next.js 16 (App Router) + React 19 + TypeScript, with `output: 'standalone'` producing a minimal Docker image explicitly documented for self-hosting — this covers both the UI and the API/server-action layer in one codebase, and gives a built-in `fetch` cache useful for the ingestion layer. Persistence is Postgres (Dokploy-provisioned) via Drizzle ORM, chosen over Prisma specifically to avoid native-binary/Docker-arch mismatches in a self-hosted container. Markdown table parsing uses `remark` + `remark-gfm` (real GFM-aware parsing, not regex) for the one source without a JSON alternative; `zod` validates all externally-sourced data before it enters app state.
+Next.js 16 (App Router) is the full-stack framework of choice: one codebase for UI + API/Server Actions, built-in `fetch` caching that fits the "fetch GitHub, cache it" requirement, and `output: 'standalone'` purpose-built for Docker self-hosting (avoiding any Vercel-specific API). Drizzle ORM over Prisma specifically to sidestep Docker native-binary architecture mismatches (Prisma's Rust query engine binaries have a known failure mode across build-machine vs. container OS/libc). `remark` + `remark-gfm` for markdown table parsing rather than hand-rolled regex, since GFM tables have edge cases (badges, escaped pipes, alignment rows) regex breaks on.
 
 **Core technologies:**
-- Next.js 16 (App Router, `output: 'standalone'`): full-stack framework, UI + API/server actions — self-hosting is an explicitly documented, first-class deploy target, not a workaround
-- Drizzle ORM + `pg` (node-postgres): type-safe DB access with plain SQL migrations and no native-binary Docker risk
-- PostgreSQL (Dokploy-provisioned): relational fit for a small, well-defined schema (opportunities/benefits cache + applications tracking)
-- `remark` + `remark-gfm`: GFM-aware markdown table parsing for sources without a JSON alternative — avoids the silent-breakage failure mode of regex parsing
-- shadcn/ui + Tailwind v4: fast to build a filterable table + status UI without adding a long-term npm runtime dependency
+- Next.js 16 (App Router) + React 19: unified frontend/backend, Docker-native standalone output — avoids Vercel lock-in
+- Drizzle ORM 0.45.2 + `pg` + Postgres 16/17: type-safe DB access with no native-binary Docker risk, fits Dokploy's provisioned Postgres
+- `remark` + `remark-parse` + `remark-gfm`: robust GFM markdown table → AST parsing for the two README sources
+- `zod`: runtime validation of external, unversioned, community-maintained data before it enters app state
+- Tailwind CSS 4 + shadcn/ui: copy-in components (no runtime version lock) for filterable tables and status UI
 
 ### Expected Features
 
-The dashboard's whole value proposition is merging discovery (live listings) and tracking (personal application status) into one page — most competitor tools (Huntr, Teal, Simplify) keep those as separate products. That merge is the actual differentiator, not an add-on feature.
-
 **Must have (table stakes):**
-- Live-refreshed listing table across all 3 sources, always current — the entire premise of the tool
-- Search/filter by category, type, open/closed status — without it, 1200+ rows is unusable
-- Closed/inactive indicator per listing, with direct apply link
+- Live-refreshed listing table across all 3 sources — the entire premise of the tool
+- Search/filter by category, type, open/closed status — 1200+ rows is unusable without it
+- Closed/inactive indicator per listing, direct apply link, freshness ("last synced") indicator
 - Personal application status tracking (applied/in process/rejected/accepted) + notes field
 - Cross-device DB-backed persistence (explicitly not localStorage)
-- Freshness indicator ("last synced X ago") — trust signal that "live" really means live
 
-**Should have (competitive):**
-- Relevance highlighting/deprioritization for underclassmen-only rows (Juan is past that eligibility window)
+**Should have (competitive/differentiator):**
+- Relevance deprioritization for underclassmen-only rows (rule-based, not ML)
 - Saved/starred shortlist distinct from "applied"
-- "New since last visit" badge (requires storing fetch snapshot history, not just latest state)
+- "New since last visit" badge (requires snapshot history, not just latest-state overwrite)
+- Single combined discovery + tracking view — this is the product's actual central differentiator vs. competitors like Simplify/Huntr, which split browse and track into separate products
 
 **Defer (v2+):**
-- .edu.pe eligibility overlay for benefits (needs manual curation, not a parsing task)
-- Push/email/Telegram alerts (explicitly deferred in PROJECT.md pending v1 validation)
-- Deadline/urgency surfacing (feasibility depends on whether source data actually has usable dates — verify in Phase 1 before committing UI to it)
+- .edu.pe eligibility overlay for benefits (needs manual curation, not parsing)
+- Push/email/Telegram alerts (explicitly deferred in PROJECT.md)
+- Deadline/urgency surfacing (contingent on unverified source data quality — check in Phase 1 before committing UI space)
+- Explicitly out of scope entirely: multi-user auth, auto-apply/autofill, resume/ATS tooling, full CRM, maintaining additional source repos
 
 ### Architecture Approach
 
-A four-layer pipeline: **ingestion** (three isolated per-source parsers → a single `normalize.ts` mapping everything into one `Opportunity`/`Benefit` schema) → **scheduled sync job** (cron, upserts into Postgres, marks missing rows `is_active=false` rather than hard-deleting) → **API layer** (thin REST/RPC over Postgres, plus application CRUD) → **UI** (filterable dashboard + status picker). Everything runs as a single container/process at this scale — no queue, no separate worker needed.
+Scheduled ETL into a cache table, never fetch-on-request: a background job (cron, e.g. every 1-4 hours, plus a manual "refresh now" endpoint calling the identical function) fetches the 3 GitHub sources, normalizes them into a common `Opportunity`/`Benefit` schema, and upserts into Postgres keyed on a stable, content-derived `external_id` — never a DB auto-increment, since the `applications` table foreign-keys against `external_id` and must survive cache churn. Rows missing from a fresh sync are soft-deleted (`is_active = false`), not hard-deleted, so a user's tracked application never gets orphaned by an upstream removal.
 
 **Major components:**
-1. Source parsers (×3, isolated in `ingestion/sources/`) — fetch + parse each source's raw shape, tolerant of schema drift
-2. Normalize + sync (`ingestion/normalize.ts`, `ingestion/sync.ts`) — one seam mapping all sources to a common schema, computing a stable `external_id`
-3. Postgres cache tables (opportunities, benefits, applications) — UI/API never talk to GitHub directly, only to this cache
-4. API layer + UI — filtered reads, application CRUD, all backed by the DB, not GitHub
+1. Ingestion layer (`ingestion/sources/*`, `normalize.ts`, `sync.ts`) — isolated from API/UI so fragile source-format drift fails loudly in one place
+2. Data layer (Postgres: `opportunities`, `benefits`, `applications`, `sync_log` tables) — the only thing the UI ever reads from
+3. API layer (`api/opportunities.ts`, `api/benefits.ts`, `api/applications.ts`, `api/sync.ts`) — thin handlers over `db/queries/`
+4. Jobs (`jobs/scheduled-sync.ts`) — thin cron wrapper calling the same `runSync()` used by the manual trigger, so there's no duplicated ingestion logic
 
 ### Critical Pitfalls
 
-1. **Unauthenticated GitHub rate limit (60/hr) exhausted almost immediately** — use a fine-scoped, expiring PAT server-side (raises limit to 5,000/hr) and never fetch on page load, only on a schedule.
-2. **Markdown table parser breaks silently on upstream format drift** — prefer SimplifyJobs' actual `.github/scripts/listings.json` over parsing its rendered README; use `remark-gfm` (not regex) for the source that has no JSON alternative; add a parse sanity check so one malformed row doesn't kill the whole sync.
-3. **"Live" reinterpreted as fetch-on-every-request** — decouple ingestion (scheduled, writes to DB) from serving (UI always reads DB, never GitHub); surface `last_synced_at` in the UI.
-4. **Cloudflare proxy + Dokploy/Traefik SSL mode mismatch** — use Cloudflare "Full (strict)" with Let's Encrypt on the Traefik side (Dokploy default); avoid Cloudflare Origin CA certs (fragile, known Dokploy issues).
-5. **Plaintext secrets (GitHub PAT, DB creds) in Dokploy env vars with no rotation plan** — scope the PAT read-only/fine-grained with an expiration date; never commit secrets to git.
+1. **Unauthenticated GitHub rate-limit exhaustion (60/hr)** — always use a read-only, fine-scoped, expiring PAT server-side (raises limit to 5,000/hr) and never fetch GitHub on page-load; fetch only from the scheduled/manual sync job.
+2. **Markdown table parser breaks silently on upstream format drift** — prefer SimplifyJobs' actual underlying `.github/scripts/listings.json` over parsing their rendered README table; for `underclassmen-opportunities` (markdown-only), use `remark`/`remark-gfm` with defensive HTML-stripping and a column-count sanity check, never hand-rolled regex.
+3. **"Live" reinterpreted as fetch-per-request instead of fetch-on-schedule-serve-from-cache** — decouple ingestion from serving entirely; store and surface `last_synced_at` per source so freshness is a visible, honest signal rather than an assumption.
+4. **Cloudflare/Traefik SSL misconfiguration** — use Cloudflare "Full (strict)" mode with Let's Encrypt via Traefik (Dokploy default); avoid Cloudflare Origin CA certs, which are known to break on Dokploy updates.
+5. **Plaintext secrets with no rotation plan** — Dokploy env vars are plaintext-visible to anyone with dashboard access; scope the GitHub PAT to read-only public metadata with an expiration date, and gate any internal `/sync` or `/debug` route behind a shared secret even for a single-user app.
 
 ## Implications for Roadmap
 
 Based on research, suggested phase structure:
 
-### Phase 1: Ingestion Foundation
-**Rationale:** Every other feature (filtering, tracking, UI) depends on structured data existing in Postgres first — research is unanimous that this must be pull-and-cache from day one, not retrofitted (Pitfalls 1 & 3).
-**Delivers:** Postgres schema (opportunities, benefits, sync_log), three source parsers (prefer SimplifyJobs' `listings.json` over README scraping; `remark-gfm` for underclassmen-opportunities; plain JSON.parse for student-benefits), normalize.ts producing a common schema with stable `external_id`, a scheduled + manually-triggerable sync job.
-**Addresses:** Live-refreshed listing table, freshness indicator (FEATURES.md table stakes)
-**Avoids:** Pitfalls 1, 2, 3 (rate limits, parser fragility, fetch-on-request anti-pattern)
+### Phase 1: Ingestion foundation (parsers + normalization + cache schema)
+**Rationale:** Every other feature (listing table, filters, tracking) depends on normalized data existing in Postgres first; the architecture and pitfalls research both flag the `external_id`/snapshot-history schema design as a "decide now or rebuild later" decision, so it must be settled before any UI work begins.
+**Delivers:** Three source parsers (SimplifyJobs via `listings.json`, underclassmen-opportunities via `remark-gfm`, student-benefits via `JSON.parse`), a `normalize.ts` common schema, Postgres cache tables (`opportunities`, `benefits`, `sync_log`) with stable `external_id` and `is_active` soft-delete, and a scheduled + manual sync job authenticated via a fine-scoped GitHub PAT.
+**Addresses:** Live-refreshed listing table, closed/inactive indicator, freshness indicator (all P1 in FEATURES.md)
+**Avoids:** Pitfall 1 (rate limits), Pitfall 2 (parser fragility), Pitfall 3 (fetch-per-request anti-pattern)
 
-### Phase 2: Dashboard UI — Discovery
-**Rationale:** With data reliably in Postgres, build the read-only browsing experience before adding write paths (tracking) — validates the ingestion schema against real UI needs first.
-**Delivers:** Filterable/searchable listing UI (category, type, open/closed), source/category distinction (tabs), closed/inactive badges, last-synced indicator.
-**Uses:** Next.js Server Components + shadcn/ui + Tailwind from STACK.md
-**Implements:** API/UI layers from ARCHITECTURE.md
+### Phase 2: Dashboard UI — listing, search, filter
+**Rationale:** Once the cache layer exists, the read path (API → Postgres → UI) is straightforward and matches the FEATURES.md P1 priority (search/filter is "LOW-MEDIUM" cost once data exists).
+**Delivers:** Filterable/searchable listing table and benefits view (shadcn/ui + Tailwind), category/type/status filters, last-synced indicator in UI, source attribution per pitfalls research (licensing/ToS due diligence).
+**Uses:** Next.js Server Components, shadcn/ui, Tailwind v4
+**Implements:** API layer (`api/opportunities.ts`, `api/benefits.ts`), UI layer components
 
-### Phase 3: Application Tracking
-**Rationale:** Second core requirement from PROJECT.md; deliberately built as an independent write path into the same Postgres instance so sync and tracking can never conflict (Architecture Pattern 3 / Anti-Pattern 2).
-**Delivers:** `applications` table keyed by `external_id` (not cache row ID), status field (applied/in process/rejected/accepted) + notes, Server Action or API route for CRUD, UI status picker per row.
-**Uses:** Drizzle schema + migrations from STACK.md
-**Implements:** Application Store component from ARCHITECTURE.md; satisfies cross-device sync requirement directly since it's DB-backed, not localStorage (Anti-Pattern 3)
+### Phase 3: Application tracking + persistence
+**Rationale:** Depends on Phase 1's `external_id` scheme (tracking foreign-keys against it, not a cache row ID) but is otherwise independent of Phase 2's UI polish — can be built in parallel with or immediately after the listing view since it shares the same Postgres instance.
+**Delivers:** `applications` table (status enum + notes), Server Actions or `api/applications.ts` CRUD, status picker UI wired into the listing cards from Phase 2.
+**Uses:** Drizzle ORM, zod validation on mutation input
+**Implements:** Application Store component, cross-device sync (satisfies two Active requirements — tracking and sync — as one piece of infrastructure)
 
-### Phase 4: Deploy — Dokploy + Cloudflare
-**Rationale:** All prior phases are deployable as one Docker container; deploy is deliberately last so the SSL/DNS/secrets checklist (Pitfalls 4, 5, 6) is verified once against a feature-complete app rather than iterated on repeatedly.
-**Delivers:** Multi-stage Dockerfile (Next.js `standalone` output), Dokploy project + app configured via the API (per `hosting/infra/API-DEPLOY-GUIDE.md`), Postgres provisioned as a Dokploy-native DB, Cloudflare DNS record for a `juan-tech.com` subdomain with SSL mode "Full (strict)" + Let's Encrypt, GitHub PAT and DB credentials set as scoped/expiring Dokploy env vars.
-**Rationale:** Confirms the self-hosted deploy target works end-to-end (HTTPS, no redirect loop, sync job running in production) as an explicit acceptance check, not an assumption.
+### Phase 4: Deploy (Dokploy + Cloudflare)
+**Rationale:** Deploy-phase pitfalls (SSL mode, secrets hygiene) are explicitly called out as acceptance checks, not something to verify implicitly; doing this as its own phase forces an explicit HTTPS/PAT-scope check rather than assuming infra "just works" because Dokploy and Cloudflare are separately configured.
+**Delivers:** Multi-stage Dockerfile (`output: 'standalone'`), Dokploy-provisioned Postgres wired via env var, Cloudflare DNS subdomain on `juan-tech.com` in "Full (strict)" SSL mode with Let's Encrypt, PAT and DB credentials scoped/expiring in Dokploy env vars.
+**Avoids:** Pitfall 5 (SSL/Cloudflare misconfiguration), Pitfall 6 (secrets hygiene)
 
 ### Phase Ordering Rationale
 
-- Ingestion must come first: filtering, tracking, and UI all assume structured Postgres data exists — building UI against live/unstable GitHub fetches would mean rebuilding it once caching lands (FEATURES.md dependency graph, ARCHITECTURE.md Pattern 1).
-- Discovery UI before tracking: tracking's `applications` table references `external_id` values that only exist once ingestion + normalization are running; validating the read path first surfaces schema issues before a second feature depends on the same IDs.
-- Tracking before deploy: deploy-phase pitfalls (SSL, secrets) are one-time due-diligence checks best done once against a complete app, not re-verified after every subsequent feature phase.
-- Deploy last, not "whenever it's convenient": research treats self-hosted deploy as needing an explicit acceptance check (HTTPS works, sync runs reliably over 24h) — bundling it with earlier phases risks skipping that check under feature-development pressure.
+- Ingestion must come first because both the listing UI and application tracking depend on the `external_id`/normalized-schema decisions baked into it — retrofitting either later risks breaking foreign keys or losing snapshot history needed for the deferred "new since last visit" feature.
+- Tracking (Phase 3) can technically run in parallel with the listing UI (Phase 2) since both only depend on Phase 1's schema, not on each other — flag this to the roadmapper as a possible phase-merge or parallelization opportunity if timeline pressure exists.
+- Deploy is deliberately last so the sync job, listing UI, and tracking flow can all be verified locally against a real cache/DB before introducing the Cloudflare/Dokploy variable, per the pitfalls research's explicit deploy-phase acceptance checklist.
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 1 (Ingestion):** Needs to confirm at planning time whether SimplifyJobs' `.github/scripts/listings.json` path/schema is still current (repos restructure), and whether `underclassmen-opportunities` table columns are stable enough for a first-pass parser — treat as a spike within the phase, not a blocking pre-research task.
-- **Phase 4 (Deploy):** Needs to read `hosting/infra/API-DEPLOY-GUIDE.md` and related RUNBOOKs in full at plan time (only skimmed during project research) to get exact Dokploy API call sequences right.
+- **Phase 1:** Needs a Phase-1-internal data-quality check on `underclassmen-opportunities` and `Summer2027-Internships` — specifically verifying `listings.json` field names/shape and whether deadline data is reliably present (FEATURES.md flags deadline surfacing as contingent on this).
 
 Phases with standard patterns (skip research-phase):
-- **Phase 2 (Dashboard UI):** Standard Next.js + shadcn filterable-table pattern, well-documented.
-- **Phase 3 (Application Tracking):** Standard CRUD-over-Postgres pattern with Drizzle, no novel integration.
+- **Phase 2:** Standard CRUD-list-with-filters UI pattern, well-documented in Next.js/shadcn examples.
+- **Phase 3:** Standard status-tracking CRUD, no novel integration.
+- **Phase 4:** Dokploy's own Next.js and Cloudflare docs directly cover this deployment shape (confirmed via Context7 in STACK.md).
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Versions and self-hosting guidance verified via Context7 official docs (Next.js, Drizzle, shadcn) and npm registry |
-| Features | MEDIUM | Cross-checked against multiple job-tracker products (Huntr, Teal, Simplify) and the named source repos directly; no access to competitor internal usage data |
-| Architecture | HIGH | Standard, widely-used ETL/cache-then-serve pattern; general software architecture reasoning rather than library-specific claims |
-| Pitfalls | HIGH (technical) / MEDIUM (licensing) | GitHub rate limits, markdown parsing, Cloudflare/Traefik behavior are well-documented; ToS/licensing re-display risk is genuinely ambiguous and untested for this exact use case |
+| Stack | HIGH | Verified via Context7 official docs (Next.js, Drizzle, shadcn/ui) and live npm registry version checks |
+| Features | MEDIUM | Cross-checked against multiple job-tracker products and the actual source repos, but no direct access to competitor usage data |
+| Architecture | HIGH | Standard ETL/cache-then-serve pattern; reasoning-based rather than library-specific, assessed as high confidence for general software architecture |
+| Pitfalls | HIGH/MEDIUM | GitHub API limits, markdown parsing, and Cloudflare/Traefik behavior are HIGH (well-documented official sources); licensing/ToS re-display risk is MEDIUM (GitHub's scraping policy is ambiguous and untested for this exact use case) |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- Whether SimplifyJobs' `Summer2027-Internships` truly exposes a stable `.github/scripts/listings.json` (vs. README-only) needs a direct check at Phase 1 planning time, not assumed from this research pass.
-- Whether source tables reliably contain parseable deadline data is unconfirmed — treat "deadline surfacing" as a P3/deferred feature until Phase 1 data-quality check resolves it.
-- License/ToS status of each of the 3 source repos should be checked and documented once during Phase 1 (due-diligence checklist item, not a blocking gate given single-user/no-public-signup scope).
+- **Deadline/urgency data quality:** FEATURES.md and PITFALLS.md both flag that `Summer2027-Internships` may not reliably expose parseable deadline data — verify during Phase 1 parsing work before committing UI real estate to this feature; if unusable, drop it from the roadmap entirely rather than carrying it as permanent P3 debt.
+- **License/attribution due diligence:** Not yet performed — check each of the 3 source repos' LICENSE files and add UI attribution as a one-time Phase 1 checklist item (low effort, MEDIUM-confidence risk area per PITFALLS.md Pitfall 4).
+- **.edu.pe eligibility curation approach:** Deferred to v2+ by design; no research gap to resolve now, but flag for the roadmapper that this needs a manual curation process, not a parsing task, when it's eventually scheduled.
 
 ## Sources
 
 ### Primary (HIGH confidence)
 - Context7 `/vercel/next.js` — standalone output, Docker self-hosting guidance
 - Context7 `/drizzle-team/drizzle-orm-docs` — node-postgres setup, migrations
-- Context7 `/shadcn-ui/ui` — Tailwind v4 CSS-first install
-- docs.github.com REST API rate limits / best practices
-- developers.cloudflare.com DNS API docs
-- docs.dokploy.com (Next.js guide, environment variables, Cloudflare domains)
-- PROJECT.md — project's own stated requirements, constraints, out-of-scope list
+- Context7 `/shadcn-ui/ui` — Tailwind v4 CSS-first install, Next.js installation flow
+- npm registry — verified current package versions as of 2026-09-07
+- [GitHub REST API rate limits & best practices](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api)
+- [docs.dokploy.com](https://docs.dokploy.com/docs/core/nextjs) — Next.js and Cloudflare deployment guides
+- [SimplifyJobs/Summer2027-Internships](https://github.com/SimplifyJobs/Summer2027-Internships) — actual source repo referenced in PROJECT.md
 
 ### Secondary (MEDIUM confidence)
-- Huntr / Teal / Simplify product pages and third-party comparisons — competitor feature patterns
-- SimplifyJobs `Summer2026-Internships` CONTRIBUTING.md — inferred `listings.json` data-source pattern
+- [Huntr](https://huntr.co/product/job-tracker), [Teal vs Huntr comparison](https://cloudcolleague.com/blogs/job-hunting/teal-vs-huntr/) — competitor feature patterns
+- [Prentus job tracker comparison](https://prentus.com/blog/we-found-the-5-best-job-tracker-tools-on-the-market) — third-party review, cross-checked
 
 ### Tertiary (LOW confidence)
-- GitHub site-policy scraping issue thread — ToS/licensing interpretation, genuinely unsettled, flagged as a gap above
+- [github/site-policy scraping issue #56](https://github.com/github/site-policy/issues/56) — ambiguous, needs manual per-repo license verification, not a definitive answer
 
 ---
 *Research completed: 2026-09-07*
