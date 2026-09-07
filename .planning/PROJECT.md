@@ -12,7 +12,9 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Ingestión y normalización de las 3 fuentes (Summer2027-Internships, underclassmen-opportunities, student-benefits) en Postgres — Phase 1
+- ✓ Sync programado (cron 2h) + trigger manual protegido, sin fetch-por-request — Phase 1
+- ✓ `external_id` estable (con `url` incluido en el hash tras detectar colisiones reales) y soft-delete aislado por fuente — Phase 1
 
 ### Active
 
@@ -55,6 +57,9 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 | Tracking de postulaciones incluido desde v1 | Es el caso de uso diario real, no solo descubrimiento | — Pending |
 | Persistencia multi-dispositivo (backend/DB) en vez de solo localStorage | Juan necesita ver su estado desde celu y laptop | — Pending |
 | Deploy en hosting propio (Dokploy/Hetzner) + Cloudflare, no Vercel | Juan ya tiene infraestructura propia gestionable vía API en `hosting/infra`; pidió explícitamente subirlo ahí con subdominio de juan-tech.com | — Pending |
+| DB de dev en Dokploy (`shared-postgres`, tenant `opportunities`) solo accesible desde la red interna del VPS | No es alcanzable desde fuera para dev local — se usó Postgres local en Docker (puerto 5434) para dev/test, y la DB de Dokploy queda reservada para el deploy real en Fase 4 | ✓ Good |
+| `external_id` de `opportunities` incluye `url` en el hash (no solo company+title+locations) | El plan original colisionaba en 1867/16109 filas reales de Summer2027-Internships; con `url` quedó 16109/16109 únicos | ✓ Good |
+| GITHUB_PAT no bloqueó la ejecución de Fase 1 | Corrimos el sync de prueba sin autenticar (bajo volumen, solo dev); production/cron real necesita el PAT seteado antes de confiar en el sync cada 2h | ⚠️ Revisit antes de Fase 4 |
 
 ## Evolution
 
@@ -74,4 +79,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 after initialization*
+*Last updated: 2026-09-07 after Phase 1*
