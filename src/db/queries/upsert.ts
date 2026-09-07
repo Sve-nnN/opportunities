@@ -1,8 +1,8 @@
 import { and, eq, notInArray } from "drizzle-orm";
 
 import type { Database } from "../client";
-import { benefits } from "../schema";
-import type { NormalizedBenefit } from "../../ingestion/normalize";
+import { benefits, opportunities } from "../schema";
+import type { NormalizedBenefit, NormalizedOpportunity } from "../../ingestion/normalize";
 
 export interface UpsertBenefitsResult {
   rowsUpserted: number;
@@ -67,6 +67,85 @@ export async function upsertBenefits(
       ),
     )
     .returning({ id: benefits.id });
+
+  return {
+    rowsUpserted: rows.length,
+    rowsSoftDeleted: softDeleted.length,
+  };
+}
+
+export interface UpsertOpportunitiesResult {
+  rowsUpserted: number;
+  rowsSoftDeleted: number;
+}
+
+/**
+ * Upsert normalized opportunity rows by `external_id`, then soft-delete any
+ * existing `opportunities` row for THIS SPECIFIC `source` whose external_id
+ * was not in this run's row set. Scoping both the upsert and the soft-delete
+ * WHERE clause to `source` is required so a summer2027-internships sync can
+ * never soft-delete underclassmen-opportunities rows (or vice versa) —
+ * must_have per 01-02-PLAN.md.
+ */
+export async function upsertOpportunities(
+  db: Database,
+  rows: NormalizedOpportunity[],
+  source: string,
+): Promise<UpsertOpportunitiesResult> {
+  if (rows.length === 0) {
+    return { rowsUpserted: 0, rowsSoftDeleted: 0 };
+  }
+
+  for (const row of rows) {
+    await db
+      .insert(opportunities)
+      .values({
+        externalId: row.externalId,
+        source: row.source,
+        title: row.title,
+        company: row.company,
+        location: row.location,
+        category: row.category,
+        roleType: row.roleType,
+        url: row.url,
+        isActive: row.isActive,
+        postedAt: row.postedAt,
+        raw: row.raw,
+        lastSeenAt: row.lastSeenAt,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: opportunities.externalId,
+        set: {
+          source: row.source,
+          title: row.title,
+          company: row.company,
+          location: row.location,
+          category: row.category,
+          roleType: row.roleType,
+          url: row.url,
+          isActive: row.isActive,
+          postedAt: row.postedAt,
+          raw: row.raw,
+          lastSeenAt: row.lastSeenAt,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  const seenExternalIds = rows.map((row) => row.externalId);
+
+  const softDeleted = await db
+    .update(opportunities)
+    .set({ isActive: false, updatedAt: new Date() })
+    .where(
+      and(
+        eq(opportunities.source, source),
+        eq(opportunities.isActive, true),
+        notInArray(opportunities.externalId, seenExternalIds),
+      ),
+    )
+    .returning({ id: opportunities.id });
 
   return {
     rowsUpserted: rows.length,

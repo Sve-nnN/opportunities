@@ -31,6 +31,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await runSync();
-  return NextResponse.json({ ok: true, result });
+  const { results } = await runSync();
+  return NextResponse.json({ ok: true, results });
 }
