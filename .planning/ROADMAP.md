@@ -27,7 +27,9 @@ Juan necesita una sola página que agregue en vivo internships, programas underc
   2. Un sync programado (con opción de reintento manual) actualiza los datos periódicamente, sin fetch en cada request
   3. Cada registro tiene un `external_id` estable que sobrevive entre syncs
   4. Los registros que desaparecen de la fuente quedan marcados inactivos, nunca se borran
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 01-01-PLAN.md — Next.js scaffold + Docker + Drizzle schema + tracer end-to-end sync for student-benefits (fetch, normalize, external_id, soft-delete, sync_log, cron + manual trigger)
+- [ ] 01-02-PLAN.md — Expand ingestion to Summer2027-Internships (listings.json) and underclassmen-opportunities (remark-gfm), orchestrated with per-source error isolation
 
 ### Phase 2: Discovery UI
 **Mode:** mvp
@@ -74,7 +76,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Ingestion Foundation | 0/TBD | Not started | - |
+| 1. Ingestion Foundation | 0/2 | Not started | - |
 | 2. Discovery UI | 0/TBD | Not started | - |
 | 3. Application Tracking | 0/TBD | Not started | - |
 | 4. Deploy | 0/TBD | Not started | - |
