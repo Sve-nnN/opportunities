@@ -45,6 +45,7 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 - **Alcance**: Proyecto personal de un solo usuario (Juan) — no se diseña para escalar a otros estudiantes.
 - **Datos en vivo**: Las tres fuentes son repos públicos de GitHub sin API dedicada — el fetch en vivo depende de leer README/JSON vía GitHub API o raw content, respetando rate limits.
 - **Persistencia**: El tracking de postulaciones necesita un backend/DB liviano (no solo localStorage) por el requisito de sincronización multi-dispositivo.
+- **Deploy**: No se despliega en Vercel — el hosting propio de Juan vive en `/Users/juan/Documents/Codigo/Personal/hosting` (Dokploy sobre VPS Hetzner `sapling-vps-01`, gestionado vía API con `DOKPLOY_TOKEN`; DBs nativas Postgres/MariaDB/Redis provisionadas ahí). El dominio se gestiona con la API de Cloudflare. La app final va en un subdominio de `juan-tech.com`.
 
 ## Key Decisions
 
@@ -53,6 +54,7 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 | Fetch en vivo de las 3 fuentes en vez de snapshot estático | Evita mantenimiento manual; los repos (especialmente Summer2027-Internships) se actualizan a diario | — Pending |
 | Tracking de postulaciones incluido desde v1 | Es el caso de uso diario real, no solo descubrimiento | — Pending |
 | Persistencia multi-dispositivo (backend/DB) en vez de solo localStorage | Juan necesita ver su estado desde celu y laptop | — Pending |
+| Deploy en hosting propio (Dokploy/Hetzner) + Cloudflare, no Vercel | Juan ya tiene infraestructura propia gestionable vía API en `hosting/infra`; pidió explícitamente subirlo ahí con subdominio de juan-tech.com | — Pending |
 
 ## Evolution
 
