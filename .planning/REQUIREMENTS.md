@@ -1,0 +1,104 @@
+# Requirements: Opportunities Hub
+
+**Defined:** 2026-09-07
+**Core Value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
+
+## v1 Requirements
+
+### Ingestion (ING)
+
+- [ ] **ING-01**: El sistema obtiene y normaliza datos de `SimplifyJobs/Summer2027-Internships` (preferir `listings.json` sobre parsear el README) en un esquema común de oportunidad
+- [ ] **ING-02**: El sistema obtiene y normaliza datos de `underclassmen-opportunities` (parser markdown GFM real, no regex) en el mismo esquema común
+- [ ] **ING-03**: El sistema obtiene y normaliza datos de `student-benefits/benefits.json` en un esquema común de beneficio
+- [ ] **ING-04**: Cada fuente se sincroniza en un job programado (no en cada request) y queda cacheada en Postgres, con reintento manual disponible
+- [ ] **ING-05**: Los registros usan un `external_id` estable (no autoincremental) para que el tracking de postulaciones nunca pierda su referencia entre syncs
+- [ ] **ING-06**: Los registros que desaparecen de la fuente se marcan inactivos (soft-delete), nunca se borran físicamente
+
+### Discovery (DISC)
+
+- [ ] **DISC-01**: Juan puede ver un listado unificado de internships, programas underclassmen y beneficios, siempre reflejando el último sync (no una copia estática)
+- [ ] **DISC-02**: Juan puede filtrar/buscar oportunidades por categoría, tipo de rol y estado (abierto/cerrado)
+- [ ] **DISC-03**: Cada listing muestra si está cerrado/inactivo, con enlace directo a la fuente/aplicación
+- [ ] **DISC-04**: El dashboard muestra cuándo fue la última sincronización por fuente ("last synced")
+
+### Benefits (BENE)
+
+- [ ] **BENE-01**: Juan puede ver el catálogo completo de beneficios .edu (título, descripción, tags) desde `student-benefits`
+
+### Tracking (TRACK)
+
+- [ ] **TRACK-01**: Juan puede marcar el estado de una postulación propia (por aplicar / aplicado / en proceso / rechazado / aceptado)
+- [ ] **TRACK-02**: Juan puede agregar notas libres a una postulación trackeada
+- [ ] **TRACK-03**: El estado y las notas de las postulaciones persisten en una base de datos y se ven igual desde cualquier dispositivo (no localStorage)
+- [ ] **TRACK-04**: Juan puede marcar una oportunidad como "guardada/me interesa" sin que eso cuente como "aplicado"
+
+### Deploy (DEPLOY)
+
+- [ ] **DEPLOY-01**: La app corre como contenedor Docker desplegado vía la API de Dokploy en el hosting propio de Juan (`hosting/infra`), no en Vercel
+- [ ] **DEPLOY-02**: La app queda accesible en un subdominio de `juan-tech.com`, con DNS gestionado vía la API de Cloudflare y HTTPS funcionando (Cloudflare Full-strict + Let's Encrypt)
+- [ ] **DEPLOY-03**: Secretos (PAT de GitHub, credenciales de DB) están configurados como variables de entorno en Dokploy, con el PAT de solo lectura y con expiración
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Discovery
+
+- **DISC-05**: Relevancia/deprioritización automática de filas exclusivas para underclassmen (regla determinística sobre elegibilidad por ciclo)
+- **DISC-06**: Badge de "nuevo desde tu última visita" (requiere guardar historial de snapshots, no solo el estado actual)
+- **DISC-07**: Surfacing de deadlines/urgencia (sujeto a que la calidad de datos de origen lo permita — validar en Fase 1)
+
+### Benefits
+
+- **BENE-02**: Flag de elegibilidad probable para correos `.edu.pe` sobre cada beneficio (requiere curación manual, no es parseable)
+
+### Notifications
+
+- **NOTIF-01**: Alertas por email/push/Telegram cuando aparecen nuevas oportunidades relevantes
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Autenticación multi-usuario / cuentas de terceros | Herramienta personal de un solo usuario, no un producto para otros |
+| Auto-apply / autofill a portales de aplicación | Riesgo alto (rompe con cambios de portal, podría enviar datos incorrectos), no solicitado |
+| CRM completo (contactos, red de networking) | El campo de notas ya cubre "recordar detalles de una postulación"; fuera del core value |
+| Constructor de CV / matching ATS | Ortogonal al core value (agregación + tracking); alcance no solicitado |
+| Curaduría continua de fuentes adicionales más allá de las 3 dadas | Investigar fuentes extra (GitHub Global Campus, otras awesome-lists) es research puntual, no mantenimiento de v1 |
+| Deploy en Vercel o cualquier infraestructura serverless-only | Juan pidió explícitamente su hosting propio (Dokploy/Hetzner) + Cloudflare |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ING-01 | Phase 1 | Pending |
+| ING-02 | Phase 1 | Pending |
+| ING-03 | Phase 1 | Pending |
+| ING-04 | Phase 1 | Pending |
+| ING-05 | Phase 1 | Pending |
+| ING-06 | Phase 1 | Pending |
+| DISC-01 | Phase 2 | Pending |
+| DISC-02 | Phase 2 | Pending |
+| DISC-03 | Phase 2 | Pending |
+| DISC-04 | Phase 2 | Pending |
+| BENE-01 | Phase 2 | Pending |
+| TRACK-01 | Phase 3 | Pending |
+| TRACK-02 | Phase 3 | Pending |
+| TRACK-03 | Phase 3 | Pending |
+| TRACK-04 | Phase 3 | Pending |
+| DEPLOY-01 | Phase 4 | Pending |
+| DEPLOY-02 | Phase 4 | Pending |
+| DEPLOY-03 | Phase 4 | Pending |
+
+**Coverage:**
+- v1 requirements: 18 total
+- Mapped to phases: 18
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-09-07*
+*Last updated: 2026-09-07 after initial definition*
