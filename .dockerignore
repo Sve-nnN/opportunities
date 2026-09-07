@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+.planning
+.claude
+npm-debug.log*
+pnpm-debug.log*
+*.md
+.DS_Store
