@@ -1,5 +1,8 @@
 import { ExternalLink } from "lucide-react";
 
+import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
+import { FilterChips } from "@/components/dashboard/filter-chips";
+import { SearchBar } from "@/components/dashboard/search-bar";
 import { StatusPill } from "@/components/dashboard/status-pill";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,9 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { listBenefits } from "@/db/queries/benefits";
-import { listOpportunities } from "@/db/queries/opportunities";
+import {
+  getDistinctCategories,
+  getDistinctRoleTypes,
+  listOpportunities,
+  type OpportunityFilters,
+  type OpportunitySource,
+  type OpportunityStatus,
+} from "@/db/queries/opportunities";
 
 // This dashboard has exactly one reader (Juan) and its data lives in
 // Postgres, itself already the cache for the 2h GitHub sync (PRODUCT.md
@@ -23,12 +33,63 @@ export const dynamic = "force-dynamic";
 
 const stickyHeadClass = "sticky top-0 z-10 bg-card";
 
-export default async function Home() {
-  const [internships, underclassmen, benefits] = await Promise.all([
-    listOpportunities("summer2027-internships"),
-    listOpportunities("underclassmen-opportunities"),
-    listBenefits(),
-  ]);
+type TabValue = "internships" | "underclassmen" | "benefits";
+
+const TAB_SOURCE: Record<Exclude<TabValue, "benefits">, OpportunitySource> = {
+  internships: "summer2027-internships",
+  underclassmen: "underclassmen-opportunities",
+};
+
+function parseTab(raw: string | undefined): TabValue {
+  return raw === "underclassmen" || raw === "benefits" ? raw : "internships";
+}
+
+function parseStatus(raw: string | undefined): OpportunityStatus | undefined {
+  return raw === "open" || raw === "closed" ? raw : undefined;
+}
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const activeTab = parseTab(firstValue(params.tab));
+
+  // Filters read from the URL are scoped to the active tab only (CONTEXT.md:
+  // "buscador global arriba, aplica a la tab activa") — the other two tabs
+  // still fetch their full, unfiltered dataset so switching tabs never shows
+  // a stale filtered view of a different data source.
+  const opportunityFilters: OpportunityFilters = {
+    search: firstValue(params.q),
+    category: firstValue(params.category),
+    roleType: firstValue(params.roleType),
+    status: parseStatus(firstValue(params.status)),
+  };
+  const benefitFilters = { search: firstValue(params.q) };
+
+  const [internships, underclassmen, benefits, categories, roleTypes] =
+    await Promise.all([
+      listOpportunities(
+        "summer2027-internships",
+        activeTab === "internships" ? opportunityFilters : {},
+      ),
+      listOpportunities(
+        "underclassmen-opportunities",
+        activeTab === "underclassmen" ? opportunityFilters : {},
+      ),
+      listBenefits(activeTab === "benefits" ? benefitFilters : {}),
+      activeTab === "benefits"
+        ? Promise.resolve([])
+        : getDistinctCategories(TAB_SOURCE[activeTab]),
+      activeTab === "benefits"
+        ? Promise.resolve([])
+        : getDistinctRoleTypes(TAB_SOURCE[activeTab]),
+    ]);
 
   return (
     <div className="flex h-dvh flex-col">
@@ -38,11 +99,11 @@ export default async function Home() {
         </h1>
       </header>
 
-      <Tabs
-        defaultValue="internships"
+      <DashboardTabs
+        value={activeTab}
         className="flex min-h-0 flex-1 flex-col gap-0"
       >
-        <div className="border-b border-border px-4 py-2">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2">
           <TabsList variant="line">
             <TabsTrigger value="internships">
               Internships <Count n={countActive(internships)} />
@@ -54,6 +115,11 @@ export default async function Home() {
               Beneficios .edu <Count n={countActive(benefits)} />
             </TabsTrigger>
           </TabsList>
+
+          <div className="flex flex-1 flex-wrap items-center justify-center gap-3">
+            <SearchBar />
+            <FilterChips categories={categories} roleTypes={roleTypes} />
+          </div>
         </div>
 
         <TabsContent
@@ -80,7 +146,7 @@ export default async function Home() {
         <TabsContent value="benefits" className="min-h-0 flex-1 overflow-auto">
           <BenefitsTable rows={benefits} />
         </TabsContent>
-      </Tabs>
+      </DashboardTabs>
     </div>
   );
 }
@@ -131,43 +197,54 @@ function OpportunitiesTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.externalId}>
+        {rows.length === 0 ? (
+          <TableRow className="hover:bg-transparent">
             <TableCell
-              className={
-                deemphasized
-                  ? "whitespace-normal text-muted-foreground"
-                  : "font-medium whitespace-normal"
-              }
+              colSpan={5}
+              className="py-10 text-center text-muted-foreground"
             >
-              {row.company ?? "—"}
-            </TableCell>
-            <TableCell className="whitespace-normal">
-              {row.title ?? "—"}
-            </TableCell>
-            <TableCell className="text-muted-foreground whitespace-normal">
-              {row.location ?? "—"}
-            </TableCell>
-            <TableCell>
-              <StatusPill isActive={row.isActive} />
-            </TableCell>
-            <TableCell className="text-right">
-              {row.url ? (
-                <a
-                  href={row.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-primary underline underline-offset-4"
-                >
-                  Ver fuente
-                  <ExternalLink aria-hidden="true" className="size-3.5" />
-                </a>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
+              No se encontraron resultados con estos filtros.
             </TableCell>
           </TableRow>
-        ))}
+        ) : (
+          rows.map((row) => (
+            <TableRow key={row.externalId}>
+              <TableCell
+                className={
+                  deemphasized
+                    ? "whitespace-normal text-muted-foreground"
+                    : "font-medium whitespace-normal"
+                }
+              >
+                {row.company ?? "—"}
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                {row.title ?? "—"}
+              </TableCell>
+              <TableCell className="text-muted-foreground whitespace-normal">
+                {row.location ?? "—"}
+              </TableCell>
+              <TableCell>
+                <StatusPill isActive={row.isActive} />
+              </TableCell>
+              <TableCell className="text-right">
+                {row.url ? (
+                  <a
+                    href={row.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary underline underline-offset-4"
+                  >
+                    Ver fuente
+                    <ExternalLink aria-hidden="true" className="size-3.5" />
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
@@ -191,35 +268,46 @@ function BenefitsTable({ rows }: { rows: BenefitRow[] }) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row) => {
-          const tags = Array.isArray(row.tags) ? (row.tags as string[]) : [];
-          return (
-            <TableRow key={row.externalId}>
-              <TableCell className="w-56 align-top font-medium whitespace-normal">
-                {row.title ?? "—"}
-              </TableCell>
-              <TableCell className="max-w-xl align-top whitespace-normal text-muted-foreground">
-                {row.description ?? "—"}
-              </TableCell>
-              <TableCell className="align-top whitespace-normal">
-                <div className="flex flex-wrap gap-1">
-                  {tags.length > 0 ? (
-                    tags.map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="align-top">
-                <StatusPill isActive={row.isActive} />
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {rows.length === 0 ? (
+          <TableRow className="hover:bg-transparent">
+            <TableCell
+              colSpan={4}
+              className="py-10 text-center text-muted-foreground"
+            >
+              No se encontraron resultados con estos filtros.
+            </TableCell>
+          </TableRow>
+        ) : (
+          rows.map((row) => {
+            const tags = Array.isArray(row.tags) ? (row.tags as string[]) : [];
+            return (
+              <TableRow key={row.externalId}>
+                <TableCell className="w-56 align-top font-medium whitespace-normal">
+                  {row.title ?? "—"}
+                </TableCell>
+                <TableCell className="max-w-xl align-top whitespace-normal text-muted-foreground">
+                  {row.description ?? "—"}
+                </TableCell>
+                <TableCell className="align-top whitespace-normal">
+                  <div className="flex flex-wrap gap-1">
+                    {tags.length > 0 ? (
+                      tags.map((tag) => (
+                        <Badge key={tag} variant="outline">
+                          {tag}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="align-top">
+                  <StatusPill isActive={row.isActive} />
+                </TableCell>
+              </TableRow>
+            );
+          })
+        )}
       </TableBody>
     </Table>
   );
