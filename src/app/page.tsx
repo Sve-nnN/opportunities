@@ -157,7 +157,7 @@ function OpportunitiesTable({
                   href={row.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline focus-visible:underline"
+                  className="inline-flex items-center gap-1 text-primary underline underline-offset-4"
                 >
                   Ver fuente
                   <ExternalLink aria-hidden="true" className="size-3.5" />
