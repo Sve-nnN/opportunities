@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 1
 current_phase_name: Ingestion Foundation
 status: executing
-stopped_at: Completed 01-01-PLAN.md (Next.js scaffold + Drizzle schema + student-benefits tracer sync)
-last_updated: "2026-09-07T21:43:58.254Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-09-07T22:14:50.648Z"
 last_activity: 2026-09-07
 last_activity_desc: Roadmap and requirements created
-state_head: 8820cb1df8f6f0b22b3bab7faf2c6798a0e9156d
+state_head: 3e19cce4cc0238a28ac976a2bd3a9cb32a5f3005
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 1 of 4 (Ingestion Foundation)
-Plan: 1 of 2 in current phase
+Plan: 2 of 2 in current phase
 Status: Ready to execute
 Last activity: 2026-09-07 — Roadmap and requirements created
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01 P01 | 25min | 3 tasks | 33 files |
+| Phase 01 P02 | 35min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - Deploy en hosting propio (Dokploy/Hetzner) + Cloudflare, no Vercel
 - [Phase 1]: student-benefits.json usa el campo requiresCampus (no campusRequired como asumía research); normalize.ts lo mapea defensivamente
 - [Phase 1]: Sync tracer corrido sin GITHUB_PAT (aun no disponible) contra raw.githubusercontent.com sin autenticar, solo para esta corrida de dev; produccion debe fijar GITHUB_PAT antes de syncs frecuentes
+- [Phase 1]: external_id de summer2027-internships incluye url ademas de company+title+locations (colision real detectada: 1867/16109 filas)
+- [Phase 1]: underclassmen-opportunities tiene 9 tablas GFM con headers distintos, no una sola tabla - mapeo de columnas por alias de header en runtime
+- [Phase 1]: underclassmen-opportunities si expone senal open/closed real (badges Status) - is_active derivado de esa senal, no hardcoded true
 
 ### Pending Todos
 
@@ -92,7 +96,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-07T21:43:58.242Z
-Stopped at: Completed 01-01-PLAN.md (Next.js scaffold + Drizzle schema + student-benefits tracer sync)
+Last session: 2026-09-07T22:14:50.636Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
 </content>

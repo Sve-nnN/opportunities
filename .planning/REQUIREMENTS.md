@@ -7,8 +7,8 @@
 
 ### Ingestion (ING)
 
-- [ ] **ING-01**: El sistema obtiene y normaliza datos de `SimplifyJobs/Summer2027-Internships` (preferir `listings.json` sobre parsear el README) en un esquema común de oportunidad
-- [ ] **ING-02**: El sistema obtiene y normaliza datos de `underclassmen-opportunities` (parser markdown GFM real, no regex) en el mismo esquema común
+- [x] **ING-01**: El sistema obtiene y normaliza datos de `SimplifyJobs/Summer2027-Internships` (preferir `listings.json` sobre parsear el README) en un esquema común de oportunidad
+- [x] **ING-02**: El sistema obtiene y normaliza datos de `underclassmen-opportunities` (parser markdown GFM real, no regex) en el mismo esquema común
 - [x] **ING-03**: El sistema obtiene y normaliza datos de `student-benefits/benefits.json` en un esquema común de beneficio
 - [x] **ING-04**: Cada fuente se sincroniza en un job programado (no en cada request) y queda cacheada en Postgres, con reintento manual disponible
 - [x] **ING-05**: Los registros usan un `external_id` estable (no autoincremental) para que el tracking de postulaciones nunca pierda su referencia entre syncs
@@ -75,8 +75,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ING-01 | Phase 1 | Pending |
-| ING-02 | Phase 1 | Pending |
+| ING-01 | Phase 1 | Complete |
+| ING-02 | Phase 1 | Complete |
 | ING-03 | Phase 1 | Complete |
 | ING-04 | Phase 1 | Complete |
 | ING-05 | Phase 1 | Complete |
