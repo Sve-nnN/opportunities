@@ -9,10 +9,10 @@
 
 - [ ] **ING-01**: El sistema obtiene y normaliza datos de `SimplifyJobs/Summer2027-Internships` (preferir `listings.json` sobre parsear el README) en un esquema común de oportunidad
 - [ ] **ING-02**: El sistema obtiene y normaliza datos de `underclassmen-opportunities` (parser markdown GFM real, no regex) en el mismo esquema común
-- [ ] **ING-03**: El sistema obtiene y normaliza datos de `student-benefits/benefits.json` en un esquema común de beneficio
-- [ ] **ING-04**: Cada fuente se sincroniza en un job programado (no en cada request) y queda cacheada en Postgres, con reintento manual disponible
-- [ ] **ING-05**: Los registros usan un `external_id` estable (no autoincremental) para que el tracking de postulaciones nunca pierda su referencia entre syncs
-- [ ] **ING-06**: Los registros que desaparecen de la fuente se marcan inactivos (soft-delete), nunca se borran físicamente
+- [x] **ING-03**: El sistema obtiene y normaliza datos de `student-benefits/benefits.json` en un esquema común de beneficio
+- [x] **ING-04**: Cada fuente se sincroniza en un job programado (no en cada request) y queda cacheada en Postgres, con reintento manual disponible
+- [x] **ING-05**: Los registros usan un `external_id` estable (no autoincremental) para que el tracking de postulaciones nunca pierda su referencia entre syncs
+- [x] **ING-06**: Los registros que desaparecen de la fuente se marcan inactivos (soft-delete), nunca se borran físicamente
 
 ### Discovery (DISC)
 
@@ -77,10 +77,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | ING-01 | Phase 1 | Pending |
 | ING-02 | Phase 1 | Pending |
-| ING-03 | Phase 1 | Pending |
-| ING-04 | Phase 1 | Pending |
-| ING-05 | Phase 1 | Pending |
-| ING-06 | Phase 1 | Pending |
+| ING-03 | Phase 1 | Complete |
+| ING-04 | Phase 1 | Complete |
+| ING-05 | Phase 1 | Complete |
+| ING-06 | Phase 1 | Complete |
 | DISC-01 | Phase 2 | Pending |
 | DISC-02 | Phase 2 | Pending |
 | DISC-03 | Phase 2 | Pending |
@@ -95,6 +95,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEPLOY-03 | Phase 4 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 18 total
 - Mapped to phases: 18
 - Unmapped: 0 ✓
