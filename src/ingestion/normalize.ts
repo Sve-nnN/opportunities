@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { RawBenefit } from "./sources/student-benefits";
 import type { RawInternship } from "./sources/summer-internships";
+import type { RawUnderclassmenRow } from "./sources/underclassmen";
 
 /**
  * Common shape every `opportunities`-table source normalizes into,
@@ -103,6 +104,38 @@ export function normalizeInternship(raw: RawInternship): NormalizedOpportunity {
     // date_posted is unix seconds, not milliseconds (confirmed against the
     // live source: values like 1768140318 decode to 2026, not 1970+ms).
     postedAt: new Date(raw.date_posted * 1000),
+    raw: raw.raw,
+    lastSeenAt: new Date(),
+  };
+}
+
+/**
+ * Content-derived external_id for underclassmen-opportunities rows: title +
+ * url (this source has no company/date field guaranteed present across all
+ * 9 tables, but title+url are always present per the parser's own row
+ * validation — see sources/underclassmen.ts).
+ */
+function computeUnderclassmenExternalId(title: string, url: string): string {
+  return createHash("sha1")
+    .update(`underclassmen-opportunities:${title}:${url}`)
+    .digest("hex");
+}
+
+export function normalizeUnderclassmenRow(raw: RawUnderclassmenRow): NormalizedOpportunity {
+  return {
+    externalId: computeUnderclassmenExternalId(raw.title, raw.url),
+    source: "underclassmen-opportunities",
+    title: raw.title,
+    company: raw.company,
+    location: null,
+    category: raw.category,
+    // No distinct role_type column across any of the 9 tables in this
+    // source — category (Type/Field/Amount/Award/Eligibility) is the
+    // closest equivalent. Documented limitation, not a bug.
+    roleType: null,
+    url: raw.url,
+    isActive: raw.isActive,
+    postedAt: raw.postedAt,
     raw: raw.raw,
     lastSeenAt: new Date(),
   };
