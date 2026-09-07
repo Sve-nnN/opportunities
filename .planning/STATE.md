@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 current_phase: 2
 current_phase_name: Discovery UI
-status: planning
-stopped_at: Phase 1 complete, ready to plan Phase 2
-last_updated: "2026-09-07T22:19:21.854Z"
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-09-07T23:21:31.837Z"
 last_activity: 2026-09-07
-last_activity_desc: Phase 1 complete, transitioned to Phase 2
-state_head: a9edef175aca7857fb066279799cb1cfbcc190bc
+last_activity_desc: Phase 2 execution started
+state_head: 6de607a2990613774ca154eab51230e2052cccee
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 25
 ---
 
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-07)
 
 **Core value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
-**Current focus:** Phase 1 — Ingestion Foundation
+**Current focus:** Phase 2 — Discovery UI
 
 ## Current Position
 
-Phase: 2 of 4 (Discovery UI)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-07 — Phase 1 complete, transitioned to Phase 2
+Phase: 2 (Discovery UI) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-09-07 — Phase 2 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 |------|----------|-------|-------|
 | Phase 01 P01 | 25min | 3 tasks | 33 files |
 | Phase 01 P02 | 35min | 3 tasks | 7 files |
+| Phase 02 P01 | 40min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 1]: external_id de summer2027-internships incluye url ademas de company+title+locations (colision real detectada: 1867/16109 filas)
 - [Phase 1]: underclassmen-opportunities tiene 9 tablas GFM con headers distintos, no una sola tabla - mapeo de columnas por alias de header en runtime
 - [Phase 1]: underclassmen-opportunities si expone senal open/closed real (badges Status) - is_active derivado de esa senal, no hardcoded true
+- [Phase 2]: shadcn CLI now installs radix-ui/cn/tw-animate-css instead of individual @radix-ui/react-*+clsx+tailwind-merge packages -- verified legitimacy on npmjs.com before proceeding
+- [Phase 2]: Locked visual direction (near-black #0B0B0D, violet #7C6CF6 accent) implemented as CSS custom properties directly on :root, no light/dark toggle since the app is always-dark
 
 ### Pending Todos
 
@@ -96,7 +99,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-07T22:14:50.636Z
-Stopped at: Phase 1 complete, ready to plan Phase 2
+Last session: 2026-09-07T23:21:31.809Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
 </content>
