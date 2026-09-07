@@ -1,69 +1,113 @@
-import Image from "next/image";
+import { ExternalLink } from "lucide-react";
 
-export default function Home() {
+import { StatusPill } from "@/components/dashboard/status-pill";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { listOpportunities } from "@/db/queries/opportunities";
+
+// This dashboard has exactly one reader (Juan) and its data lives in
+// Postgres, itself already the cache for the 2h GitHub sync (PRODUCT.md
+// Operating Context) — there is nothing useful to statically prerender, and
+// a stale build-time snapshot would defeat the "always reflects last sync"
+// requirement (DISC-01). Always render this page per-request.
+export const dynamic = "force-dynamic";
+
+const stickyHeadClass = "sticky top-0 z-10 bg-card";
+
+export default async function Home() {
+  const internships = await listOpportunities("summer2027-internships");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex h-dvh flex-col">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <h1 className="text-lg font-semibold tracking-tight">
+          Opportunities Hub
+        </h1>
+      </header>
+
+      <Tabs defaultValue="internships" className="flex min-h-0 flex-1 flex-col gap-0">
+        <div className="border-b border-border px-4 py-2">
+          <TabsList variant="line">
+            <TabsTrigger value="internships">
+              Internships{" "}
+              <span className="font-mono text-2xs text-muted-foreground">
+                ({internships.length.toLocaleString("en-US")})
+              </span>
+            </TabsTrigger>
+          </TabsList>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        <TabsContent
+          value="internships"
+          className="min-h-0 flex-1 overflow-auto"
+        >
+          <OpportunitiesTable rows={internships} />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+type OpportunityRow = Awaited<ReturnType<typeof listOpportunities>>[number];
+
+/**
+ * Dense, native `<table>` shared by the Internships and Underclassmen tabs
+ * (both read from `opportunities`, just a different `source`). Kept inline
+ * rather than split into its own file since it currently has exactly one
+ * near-identical caller (Task 3 adds the second) — see 02-01-PLAN.md Task 3.
+ */
+function OpportunitiesTable({ rows }: { rows: OpportunityRow[] }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead className={stickyHeadClass}>Company</TableHead>
+          <TableHead className={stickyHeadClass}>Title</TableHead>
+          <TableHead className={stickyHeadClass}>Location</TableHead>
+          <TableHead className={stickyHeadClass}>Status</TableHead>
+          <TableHead className={`${stickyHeadClass} text-right`}>Link</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.externalId}>
+            <TableCell className="font-medium whitespace-normal">
+              {row.company ?? "—"}
+            </TableCell>
+            <TableCell className="whitespace-normal">
+              {row.title ?? "—"}
+            </TableCell>
+            <TableCell className="text-muted-foreground whitespace-normal">
+              {row.location ?? "—"}
+            </TableCell>
+            <TableCell>
+              <StatusPill isActive={row.isActive} />
+            </TableCell>
+            <TableCell className="text-right">
+              {row.url ? (
+                <a
+                  href={row.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline focus-visible:underline"
+                >
+                  Ver fuente
+                  <ExternalLink aria-hidden="true" className="size-3.5" />
+                </a>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
