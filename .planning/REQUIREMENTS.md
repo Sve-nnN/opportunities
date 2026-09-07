@@ -17,7 +17,7 @@
 ### Discovery (DISC)
 
 - [x] **DISC-01**: Juan puede ver un listado unificado de internships, programas underclassmen y beneficios, siempre reflejando el último sync (no una copia estática)
-- [ ] **DISC-02**: Juan puede filtrar/buscar oportunidades por categoría, tipo de rol y estado (abierto/cerrado)
+- [x] **DISC-02**: Juan puede filtrar/buscar oportunidades por categoría, tipo de rol y estado (abierto/cerrado)
 - [x] **DISC-03**: Cada listing muestra si está cerrado/inactivo, con enlace directo a la fuente/aplicación
 - [ ] **DISC-04**: El dashboard muestra cuándo fue la última sincronización por fuente ("last synced")
 
@@ -82,7 +82,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ING-05 | Phase 1 | Complete |
 | ING-06 | Phase 1 | Complete |
 | DISC-01 | Phase 2 | Complete |
-| DISC-02 | Phase 2 | Pending |
+| DISC-02 | Phase 2 | Complete |
 | DISC-03 | Phase 2 | Complete |
 | DISC-04 | Phase 2 | Pending |
 | BENE-01 | Phase 2 | Complete |

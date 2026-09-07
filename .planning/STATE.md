@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 2
 current_phase_name: Discovery UI
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-09-07T23:21:31.837Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-09-07T23:48:46.541Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 2 execution started
-state_head: 6de607a2990613774ca154eab51230e2052cccee
+state_head: db13c631eb6d14514ae186677fcb2527ec3d5f62
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 25
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 2 (Discovery UI) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 2 execution started
 
@@ -61,6 +61,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P01 | 25min | 3 tasks | 33 files |
 | Phase 01 P02 | 35min | 3 tasks | 7 files |
 | Phase 02 P01 | 40min | 3 tasks | 15 files |
+| Phase 02 P02 | ~20min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 1]: underclassmen-opportunities si expone senal open/closed real (badges Status) - is_active derivado de esa senal, no hardcoded true
 - [Phase 2]: shadcn CLI now installs radix-ui/cn/tw-animate-css instead of individual @radix-ui/react-*+clsx+tailwind-merge packages -- verified legitimacy on npmjs.com before proceeding
 - [Phase 2]: Locked visual direction (near-black #0B0B0D, violet #7C6CF6 accent) implemented as CSS custom properties directly on :root, no light/dark toggle since the app is always-dark
+- [Phase 2]: dashboard-tabs.tsx client wrapper added to mirror active tab into a tab URL param so filters can be scoped server-side to the active tab
+- [Phase 2]: No test framework installed for the tdd=true task; used an ad hoc tsx script (scripts/verify-filters.ts) against live Postgres, matching Phase 1's established verification convention
 
 ### Pending Todos
 
@@ -99,7 +102,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-07T23:21:31.809Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-09-07T23:48:46.505Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
 </content>
