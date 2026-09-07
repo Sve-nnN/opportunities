@@ -50,7 +50,13 @@ Juan necesita una sola página que agregue en vivo internships, programas underc
   4. El dashboard muestra cuándo fue la última sincronización por fuente
   5. Juan ve el catálogo completo de beneficios .edu (título, descripción, tags)
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — shadcn/ui + self-hosted theme/fonts + read queries + Internships/Underclassmen/Benefits tabs tracer
+- [ ] 02-02-PLAN.md — Filterable queries + search bar + filter chips + skeleton loaders
+- [ ] 02-03-PLAN.md — Sync freshness badge/banner + accessibility pass + Impeccable finish flow (DESIGN.md)
+
 **UI hint**: yes
 
 ### Phase 3: Application Tracking
