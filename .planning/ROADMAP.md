@@ -16,7 +16,7 @@ Juan necesita poder mandar cualquier oportunidad (Internships/Underclassmen) a u
 - Decimal phases (5.1, 5.2): Inserciones urgentes (marcadas con INSERTED)
 
 - [x] **Phase 5: Perfil y Etapas de Tracking** - Perfil de datos flexible (ver/editar) + nuevas etapas intermedias en el dropdown de estado (completed 2026-09-08)
-- [ ] **Phase 6: Callback API de Auto-apply** - Endpoint bearer-secret que escribe estado, perfil y auditoría en una transacción atómica
+- [x] **Phase 6: Callback API de Auto-apply** - Endpoint bearer-secret que escribe estado, perfil y auditoría en una transacción atómica (completed 2026-09-08)
 - [ ] **Phase 7: Send to AI** - Botón que genera y copia el prompt autocontenido para la sesión externa de IA
 
 ## Phase Details
@@ -57,7 +57,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Endpoint atómico `POST /api/applications/[externalId]/apply-session`: tabla `application_history` + migración, validación de transición/colisión, upsert de perfil, y verificación de datos + HTTP real (CALLBACK-01, CALLBACK-02, PROFILE-03, AUDIT-01, AUDIT-02)
+- [x] 06-01-PLAN.md — Endpoint atómico `POST /api/applications/[externalId]/apply-session`: tabla `application_history` + migración, validación de transición/colisión, upsert de perfil, y verificación de datos + HTTP real (CALLBACK-01, CALLBACK-02, PROFILE-03, AUDIT-01, AUDIT-02)
 
 ### Phase 7: Send to AI
 
@@ -82,6 +82,6 @@ Fases de v1.1 en orden numérico: 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 5. Perfil y Etapas de Tracking | 2/2 | Complete | 2026-09-08 |
-| 6. Callback API de Auto-apply | 0/1 | Not started | - |
+| 6. Callback API de Auto-apply | 1/1 | Complete | 2026-09-08 |
 | 7. Send to AI | 0/TBD | Not started | - |
 </content>

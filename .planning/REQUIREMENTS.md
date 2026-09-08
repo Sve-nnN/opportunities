@@ -42,7 +42,7 @@
 
 - [x] **PROFILE-01**: Juan puede ver y editar su perfil de datos (pares clave-valor flexibles, sin schema rígido)
 - [x] **PROFILE-02**: El perfil arranca con una carga inicial de datos básicos (nombre, email, CV, links)
-- [ ] **PROFILE-03**: Los campos nuevos que una sesión de auto-apply aprende (porque un sitio los pidió) se guardan automáticamente en el perfil para la próxima vez
+- [x] **PROFILE-03**: Los campos nuevos que una sesión de auto-apply aprende (porque un sitio los pidió) se guardan automáticamente en el perfil para la próxima vez
 
 ### Auto-apply asistido (APPLY) — v1.1
 
@@ -57,13 +57,13 @@
 
 ### Callback API (CALLBACK) — v1.1
 
-- [ ] **CALLBACK-01**: Un endpoint API gateado por bearer secret permite que una sesión externa de Claude Code actualice estado, notas y perfil de forma atómica (una transacción)
-- [ ] **CALLBACK-02**: El endpoint valida transiciones de estado y payload del lado del servidor — no confía ciegamente en el caller, dado que quien llama es la interpretación de un LLM de una página web arbitraria
+- [x] **CALLBACK-01**: Un endpoint API gateado por bearer secret permite que una sesión externa de Claude Code actualice estado, notas y perfil de forma atómica (una transacción)
+- [x] **CALLBACK-02**: El endpoint valida transiciones de estado y payload del lado del servidor — no confía ciegamente en el caller, dado que quien llama es la interpretación de un LLM de una página web arbitraria
 
 ### Audit trail (AUDIT) — v1.1
 
-- [ ] **AUDIT-01**: Cada escritura del callback registra exactamente qué datos se enviaron a esa aplicación específica (no solo el perfil global)
-- [ ] **AUDIT-02**: El historial se referencia por `opportunity_external_id`, nunca por el id serial de cache (mismo anti-patrón que `applications`)
+- [x] **AUDIT-01**: Cada escritura del callback registra exactamente qué datos se enviaron a esa aplicación específica (no solo el perfil global)
+- [x] **AUDIT-02**: El historial se referencia por `opportunity_external_id`, nunca por el id serial de cache (mismo anti-patrón que `applications`)
 
 ## v2 Requirements
 
@@ -133,11 +133,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROFILE-02 | Phase 5 | Complete |
 | TRACK-05 | Phase 5 | Complete |
 | TRACK-06 | Phase 5 | Complete |
-| CALLBACK-01 | Phase 6 | Pending |
-| CALLBACK-02 | Phase 6 | Pending |
-| PROFILE-03 | Phase 6 | Pending |
-| AUDIT-01 | Phase 6 | Pending |
-| AUDIT-02 | Phase 6 | Pending |
+| CALLBACK-01 | Phase 6 | Complete |
+| CALLBACK-02 | Phase 6 | Complete |
+| PROFILE-03 | Phase 6 | Complete |
+| AUDIT-01 | Phase 6 | Complete |
+| AUDIT-02 | Phase 6 | Complete |
 | APPLY-01 | Phase 7 | Pending |
 | APPLY-02 | Phase 7 | Pending |
 | APPLY-03 | Phase 7 | Pending |
