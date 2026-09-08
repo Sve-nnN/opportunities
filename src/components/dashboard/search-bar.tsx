@@ -26,6 +26,7 @@ export function SearchBar() {
 
   const [value, setValue] = useState(urlQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Reflect external URL changes (e.g. tab switch resets `q`) into the input.
   useEffect(() => {
@@ -36,6 +37,27 @@ export function SearchBar() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  }, []);
+
+  // ⌘K/Ctrl+K summons the search field (direction contract OWN-WORLD:
+  // "Command-palette affordance (⌘K-style search) as the primary entry to
+  // filtering" — found missing from actual behavior during the finish-flow
+  // review, 02-03-SUMMARY.md "Deviations": the input existed but nothing
+  // bound the keyboard shortcut the contract named). Kept intentionally
+  // minimal — focuses the always-visible input rather than opening a
+  // separate overlay, so the "backed by always-visible filter chips for
+  // discoverability" half of the same OWN-WORLD line isn't diluted by a
+  // modal that hides them.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const isShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+      if (!isShortcut) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   function handleChange(next: string) {
@@ -66,14 +88,27 @@ export function SearchBar() {
         Buscar por título, empresa u organización
       </label>
       <Input
+        ref={inputRef}
         id="dashboard-search"
         type="search"
         autoComplete="off"
         placeholder="Buscar…"
         value={value}
         onChange={(event) => handleChange(event.target.value)}
-        className="pl-8"
+        className="pl-8 pr-10"
       />
+      {/*
+        Discoverability hint for the ⌘K shortcut, matching the convention
+        this direction's assigned world (Linear/Kanban dev tools) uses
+        natively. aria-hidden — the input's own <label> already carries the
+        accessible name; this is a sighted-user affordance only.
+      */}
+      <kbd
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1 font-mono text-2xs text-muted-foreground"
+      >
+        ⌘K
+      </kbd>
     </div>
   );
 }

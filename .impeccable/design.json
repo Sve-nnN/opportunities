@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T01:30:00Z",
+  "title": "Design System: Opportunities Hub",
+  "extensions": {
+    "colorMeta": {
+      "near-black-ground": {
+        "role": "neutral",
+        "displayName": "Near-Black Ground",
+        "canonical": "#0b0b0d",
+        "tonalRamp": ["#0b0b0d", "#131316", "#17171b", "#1a1a1f", "#232227", "#3a393f", "#6b696f", "#e7e5e1"]
+      },
+      "warm-off-white": {
+        "role": "neutral",
+        "displayName": "Warm Off-White",
+        "canonical": "#e7e5e1",
+        "tonalRamp": ["#0b0b0d", "#232227", "#4a484d", "#6b696f", "#9a9791", "#c8c6c1", "#dedcd8", "#e7e5e1"]
+      },
+      "signal-violet": {
+        "role": "primary",
+        "displayName": "Signal Violet",
+        "canonical": "#7c6cf6",
+        "tonalRamp": ["#1e1930", "#2e2660", "#453aa0", "#5b4fc4", "#7c6cf6", "#9a8df8", "#bcb3fa", "#e3defd"]
+      },
+      "alert-red": {
+        "role": "error",
+        "displayName": "Alert Red",
+        "canonical": "#f2555a",
+        "tonalRamp": ["#3a0f11", "#5c1a1d", "#8a2529", "#c23438", "#f2555a", "#f57f83", "#f9adaf", "#fcd7d8"]
+      },
+      "muted-ink": {
+        "role": "neutral-variant",
+        "displayName": "Muted Ink",
+        "canonical": "#9a9791"
+      },
+      "hairline-border": {
+        "role": "outline",
+        "displayName": "Hairline Border",
+        "canonical": "#232227"
+      }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Default running text, table cell content." },
+      "label": { "displayName": "Label", "purpose": "Tab labels, filter chips, table headers." },
+      "data-mono": { "displayName": "Data Mono", "purpose": "Counts in parens and 'Actualizado hace Xh' timestamps — tabular-nums, IBM Plex Mono." }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Status Pill (Open)",
+      "kind": "custom",
+      "refersTo": "status-pill-open",
+      "description": "Icon + text open/active indicator — never color-only. Leads every opportunity/benefit row's status column.",
+      "html": "<span class=\"ds-pill ds-pill-open\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"m9 12 2 2 4-4\"/></svg>Abierto</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; padding: 2px 8px; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; border: 1px solid transparent; } .ds-pill-open { background: rgba(124,108,246,0.10); border-color: rgba(124,108,246,0.30); color: #e7e5e1; }"
+    },
+    {
+      "name": "Status Pill (Closed)",
+      "kind": "custom",
+      "refersTo": "status-pill-closed",
+      "description": "Icon + text closed/inactive indicator, same shape as the open variant.",
+      "html": "<span class=\"ds-pill ds-pill-closed\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"m15 9-6 6M9 9l6 6\"/></svg>Cerrado</span>",
+      "css": ".ds-pill-closed { background: #18181c; border: 1px solid #232227; color: #9a9791; display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; padding: 2px 8px; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "filter-chip-active",
+      "description": "Toggleable filter chip (category/roleType/status) — aria-pressed, generated only from live distinct data values.",
+      "html": "<button class=\"ds-chip ds-chip-active\" aria-pressed=\"true\">Abierto</button>",
+      "css": ".ds-chip { border-radius: 9999px; padding: 4px 10px; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; transition: color 0.15s, border-color 0.15s, background-color 0.15s; border: 1px solid #232227; background: transparent; color: #9a9791; } .ds-chip-active { border-color: #7c6cf6; background: rgba(124,108,246,0.15); color: #e7e5e1; } .ds-chip:hover:not(.ds-chip-active) { border-color: #3a393f; color: #e7e5e1; } .ds-chip:focus-visible { outline: 2px solid #7c6cf6; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "Command-palette-style global search — always-visible input with a ⌘K keyboard-summon shortcut and hint.",
+      "html": "<div class=\"ds-search-wrap\"><svg class=\"ds-search-icon\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input class=\"ds-search-input\" type=\"search\" placeholder=\"Buscar\\u2026\" /><kbd class=\"ds-kbd\">\\u2318K</kbd></div>",
+      "css": ".ds-search-wrap { position: relative; width: 100%; max-width: 28rem; } .ds-search-icon { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); color: #9a9791; pointer-events: none; } .ds-search-input { width: 100%; height: 32px; border-radius: 8px; border: 1px solid #232227; background: transparent; color: #e7e5e1; padding: 4px 40px 4px 32px; font-family: Inter, system-ui, sans-serif; font-size: 0.9375rem; } .ds-search-input::placeholder { color: #9a9791; } .ds-search-input:focus-visible { outline: none; border-color: #7c6cf6; box-shadow: 0 0 0 3px #7c6cf6; } .ds-kbd { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); border: 1px solid #232227; border-radius: 4px; padding: 0 4px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.6875rem; color: #9a9791; }"
+    },
+    {
+      "name": "Tab (Line variant)",
+      "kind": "nav",
+      "refersTo": "tab-trigger",
+      "description": "Active/inactive tab trigger — underline + accent-colored label on active, no filled background.",
+      "html": "<button class=\"ds-tab ds-tab-active\">Internships <span class=\"ds-tab-count\">(3,054)</span></button>",
+      "css": ".ds-tab { position: relative; background: transparent; border: none; padding: 2px 6px; font-family: Inter, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; color: rgba(231,229,225,0.6); } .ds-tab-active { color: #7c6cf6; } .ds-tab-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px; background: #7c6cf6; } .ds-tab-count { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.6875rem; color: #9a9791; } .ds-tab:focus-visible { outline: 2px solid #7c6cf6; outline-offset: 2px; }"
+    },
+    {
+      "name": "Stale-Sync Banner",
+      "kind": "custom",
+      "refersTo": "stale-sync-banner",
+      "description": "Icon+text warning banner above the table, shown only when the active tab's source has gone stale (>6h) or its last sync failed. Never color-only; the copy always names the exact failure.",
+      "html": "<div class=\"ds-banner\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg><span>El \\u00faltimo sync de esta fuente fall\\u00f3: GitHub API rate limit exceeded (403)</span></div>",
+      "css": ".ds-banner { display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid rgba(242,85,90,0.4); background: rgba(242,85,90,0.10); padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 0.8125rem; color: #e7e5e1; } .ds-banner svg { color: #f2555a; margin-top: 2px; flex-shrink: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Operator's Console",
+    "overview": "Opportunities Hub reads as a console a keyboard-driven operator would live in for hours, not a dashboard someone glances at once — direct lineage from the Linear/Kanban dev-tool family (concept-seed FORM, seed key a1815e08), where speed and legibility are the entire aesthetic argument. The ground is near-black (#0b0b0d), never pure black, and ink is a warm off-white (#e7e5e1), never pure white — the pairing avoids the harsh, sterile contrast of true monochrome so a page of dense text stays readable for long sessions. One saturated violet (#7c6cf6) is the system's entire vocabulary of emphasis: it marks the active tab, every focus ring, and nothing else. It is rationed on purpose, so its rarity keeps doing work.\n\nThe system rejects two defaults it could easily have fallen into: a \"marketing dashboard\" of hero metrics, cards, and decorative icons (this product has no metrics to sell, only rows to scan); and color-only state signaling (every status, from open/closed pills to sync-failure banners, pairs an icon with a text label, never color alone — a hard accessibility floor, not a stylistic choice). Numerals are IBM Plex Mono with tabular-nums, so a column of counts or timestamps holds its own alignment without the eye re-parsing digit widths row to row.",
+    "keyCharacteristics": [
+      "Near-black ground, warm off-white ink, one rationed violet accent",
+      "Monospace, tabular-nums for every count and timestamp",
+      "Icon+text state indicators, never color-only",
+      "Dense native <table>, sticky header, border-based rows (no zebra striping)",
+      "Command-palette-style search (⌘K) backed by always-visible filter chips"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Signal Violet appears in exactly three roles: active tab, focus ring, primary/active interactive state. A fourth use is a bug, not a style choice.", "section": "colors" },
+      { "name": "The Never-Color-Alone Rule", "body": "Every state indicator (open/closed pills, the stale-sync banner, filter-chip pressed state) pairs an icon or text label with its color. This is a hard accessibility floor, not negotiable per-component.", "section": "colors" },
+      { "name": "The Tabular-Nums Rule", "body": "Any number that appears in a column, a count badge, or a timestamp is set in the mono face with font-variant-numeric: tabular-nums.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are separated by a tonal step and a hairline border, never a box-shadow. Introducing a shadow anywhere in this system is an unauthorized new depth language.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do pair every state indicator with both an icon and a text label.",
+      "Do use IBM Plex Mono with tabular-nums for every number in a data context.",
+      "Do cap any table cell that can receive unbounded content with a max-width and line-clamp.",
+      "Do use a fully opaque focus-ring/outline color on any element that sets outline-none."
+    ],
+    "donts": [
+      "Don't introduce a second accent color, or a fourth use of Signal Violet.",
+      "Don't add a box-shadow anywhere.",
+      "Don't build a card-and-icon-tile layout for any future summary/metrics surface.",
+      "Don't let a filter-chip row or any variable-length list grow unbounded."
+    ]
+  }
+}
