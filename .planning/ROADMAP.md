@@ -94,7 +94,14 @@ Plans:
   2. La app es accesible en un subdominio de `juan-tech.com` con HTTPS funcionando (Cloudflare Full-strict + Let's Encrypt)
   3. Los secretos (PAT de GitHub, credenciales de DB) están configurados como variables de entorno en Dokploy, con el PAT de solo lectura y con expiración
 
-**Plans**: TBD
+**Plans**: 0/4 plans
+
+Plans:
+
+- [ ] 04-01-PLAN.md — Verify Docker build (static assets), push repo to GitHub, create Dokploy project/application wired to it (buildType=dockerfile)
+- [ ] 04-02-PLAN.md — Apply production migrations via SSH tunnel, set DATABASE_URL/GITHUB_PAT/SYNC_TRIGGER_SECRET as Dokploy env vars
+- [ ] 04-03-PLAN.md — Trigger deploy, confirm build success and non-crash-looping runtime
+- [ ] 04-04-PLAN.md — Configure opportunities.juan-tech.com domain + Let's Encrypt SSL, final human-verify checkpoint
 
 ## Progress
 
