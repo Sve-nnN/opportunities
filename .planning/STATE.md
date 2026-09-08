@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 current_phase: 3
 current_phase_name: Application Tracking
-status: planning
-stopped_at: Phase 2 complete, ready to plan Phase 3
-last_updated: "2026-09-08T01:44:04.981Z"
-last_activity: 2026-09-07
-last_activity_desc: Phase 2 complete, transitioned to Phase 3
-state_head: 24431e5a4102c36614d0da223830e94ff8f395cc
+status: in_progress
+stopped_at: Completed 03-01-PLAN.md (applications queries/Server Action/StatusDropdown)
+last_updated: "2026-09-08T04:00:00.000Z"
+last_activity: 2026-09-08
+last_activity_desc: Phase 3 Plan 1 complete — status tracking end-to-end (TRACK-01, TRACK-04, TRACK-03 partial)
+state_head: 243023f
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
   percent: 50
 ---
 
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-07)
 
 **Core value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
-**Current focus:** Phase 2 — Discovery UI
+**Current focus:** Phase 3 — Application Tracking
 
 ## Current Position
 
 Phase: 3 — Application Tracking
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-07 — Phase 2 complete, transitioned to Phase 3
+Plan: 1/2 complete
+Status: In progress
+Last activity: 2026-09-08 — Plan 1 (applications queries/Server Action/StatusDropdown) complete
 
-Progress: [███░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P01 | 40min | 3 tasks | 15 files |
 | Phase 02 P02 | ~20min | 3 tasks | 9 files |
 | Phase 02 P03 | ~2h | 3 tasks | 16 files |
+| Phase 03 P01 | ~1h | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,10 @@ Recent decisions affecting current work:
 - [Phase 2]: Capped the filter-chips row height (max-h-24) after Playwright measurement showed an unbounded flex-wrap chip row (Underclassmen's 102 raw category values) could collapse the entire table to 0 height
 - [Phase 2]: All accessibility/visual verification in Phase 2 Plan 3 ran against the production standalone build (node .next/standalone/server.js), never pnpm dev — dev mode showed a React Strict Mode double-effect artifact and 50-90s page loads that don't reproduce in production
 - [Phase 2]: Impeccable finish-reviewer/documenter roles ran inline per their degraded-mode fallback (no Agent/Task subagent tool available in this harness) — disclosed in 02-03-SUMMARY.md; a true independent re-review is recommended when available
+- [Phase 3 P1]: Added a UNIQUE constraint on applications.opportunity_external_id (migration 0001) as a prerequisite for onConflictDoUpdate — column existed schema-only since Phase 1 with no constraint
+- [Phase 3 P1]: Moved ApplicationStatus/APPLICATION_STATUSES into src/lib/application-status.ts (no `pg` import) after the initial build broke — the client StatusDropdown component was pulling the Postgres driver into the browser bundle by importing types from db/queries/applications.ts, which imports db/client.ts (pg)
+- [Phase 3 P1]: Removed shadcn's default shadow-md from select.tsx's SelectContent, replaced with border-border — DESIGN.md's Flat-By-Default Rule forbids any box-shadow in this system
+- [Phase 3 P1]: "Guardado/me interesa" implemented purely as a 6th value of the same `status` text column (not the pre-existing unused `isSaved` boolean column) — confirmed via live Postgres that setting status='saved' never touches opportunities.is_active nor applications.is_saved
 
 ### Pending Todos
 
@@ -110,7 +115,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T01:39:13.232Z
-Stopped at: Phase 2 complete, ready to plan Phase 3
+Last session: 2026-09-08T04:00:00.000Z
+Stopped at: Completed 03-01-PLAN.md (applications queries/Server Action/StatusDropdown) — ready for 03-02-PLAN.md (notes autosave + virtualization + accessibility pass)
 Resume file: None
 </content>
