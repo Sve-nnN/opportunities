@@ -71,3 +71,24 @@ export async function upsertApplicationStatus(
       set: { status, updatedAt: new Date() },
     });
 }
+
+/**
+ * Upsert-by-`opportunity_external_id`, same pattern/target as
+ * `upsertApplicationStatus` above. Only ever sets `notes` — on INSERT the
+ * `status` column falls back to its own schema default (`not_applied`), and
+ * on UPDATE the `set` clause deliberately omits `status` entirely so a row
+ * that already had a different tracked status (e.g. `in_progress`) is never
+ * clobbered by someone just typing a note (03-02-PLAN.md Task 2, Behavior 1).
+ */
+export async function upsertApplicationNotes(
+  opportunityExternalId: string,
+  notes: string,
+): Promise<void> {
+  await db
+    .insert(applications)
+    .values({ opportunityExternalId, notes })
+    .onConflictDoUpdate({
+      target: applications.opportunityExternalId,
+      set: { notes, updatedAt: new Date() },
+    });
+}

@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { upsertApplicationStatus } from "@/db/queries/applications";
+import {
+  upsertApplicationNotes,
+  upsertApplicationStatus,
+} from "@/db/queries/applications";
 import { APPLICATION_STATUSES } from "@/lib/application-status";
 
 // T-03-01 (threat_model): the client dropdown's `status` value is untrusted
@@ -13,6 +16,11 @@ import { APPLICATION_STATUSES } from "@/lib/application-status";
 const statusSchema = z.enum(APPLICATION_STATUSES);
 const externalIdSchema = z.string().min(1);
 const pathSchema = z.string().min(1).startsWith("/");
+// T-03-03 (threat_model): free-text notes are untrusted client input that
+// gets rendered back into the DOM — cap length before it ever reaches
+// Postgres. React escapes on render, so no HTML/markdown interpretation risk
+// beyond length; 2000 chars is generous for a per-opportunity note.
+const notesSchema = z.string().max(2000);
 
 export interface UpdateApplicationStatusResult {
   ok: boolean;
@@ -46,6 +54,43 @@ export async function updateApplicationStatus(
   }
 
   await upsertApplicationStatus(parsedExternalId.data, parsedStatus.data);
+  revalidatePath(parsedPath.data);
+
+  return { ok: true };
+}
+
+export interface UpdateApplicationNotesResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Server Action invoked from `NotesPopover` (client component) on every
+ * debounced autosave tick — never from an explicit "Guardar" button
+ * (03-CONTEXT.md). Upserts by `opportunityExternalId`, same as
+ * `updateApplicationStatus`, and revalidates the page so a reload/other
+ * device reflects the latest saved note.
+ */
+export async function updateApplicationNotes(
+  opportunityExternalId: string,
+  notes: string,
+  pathToRevalidate: string,
+): Promise<UpdateApplicationNotesResult> {
+  const parsedExternalId = externalIdSchema.safeParse(opportunityExternalId);
+  const parsedNotes = notesSchema.safeParse(notes);
+  const parsedPath = pathSchema.safeParse(pathToRevalidate);
+
+  if (!parsedExternalId.success) {
+    return { ok: false, error: "Missing opportunityExternalId" };
+  }
+  if (!parsedNotes.success) {
+    return { ok: false, error: "Notes exceed the 2000-character limit" };
+  }
+  if (!parsedPath.success) {
+    return { ok: false, error: "Invalid path to revalidate" };
+  }
+
+  await upsertApplicationNotes(parsedExternalId.data, parsedNotes.data);
   revalidatePath(parsedPath.data);
 
   return { ok: true };

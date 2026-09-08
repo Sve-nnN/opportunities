@@ -10,6 +10,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.10",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "drizzle-orm": "^0.45.2",

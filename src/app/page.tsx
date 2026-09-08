@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { FilterChips } from "@/components/dashboard/filter-chips";
 import { FreshnessBadge } from "@/components/dashboard/freshness-badge";
+import { NotesPopover } from "@/components/dashboard/notes-popover";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { StaleSyncBanner } from "@/components/dashboard/stale-sync-banner";
 import { StatusDropdown } from "@/components/dashboard/status-dropdown";
@@ -319,7 +320,7 @@ function OpportunitiesTable({
           </TableRow>
         ) : (
           rows.map((row) => (
-            <TableRow key={row.externalId}>
+            <TableRow key={row.externalId} data-external-id={row.externalId}>
               <TableCell
                 className={
                   deemphasized
@@ -356,13 +357,22 @@ function OpportunitiesTable({
                   `externalId`, never the `opportunities` cache row's serial
                   `id` (research/ARCHITECTURE.md Anti-Pattern 2).
                 */}
-                <StatusDropdown
-                  opportunityExternalId={row.externalId}
-                  status={
-                    applicationsByExternalId.get(row.externalId)?.status ??
-                    "not_applied"
-                  }
-                />
+                <div className="flex items-center gap-1">
+                  <StatusDropdown
+                    opportunityExternalId={row.externalId}
+                    status={
+                      applicationsByExternalId.get(row.externalId)?.status ??
+                      "not_applied"
+                    }
+                  />
+                  <NotesPopover
+                    opportunityExternalId={row.externalId}
+                    notes={
+                      applicationsByExternalId.get(row.externalId)?.notes ??
+                      null
+                    }
+                  />
+                </div>
               </TableCell>
               <TableCell className="text-right">
                 {row.url ? (
