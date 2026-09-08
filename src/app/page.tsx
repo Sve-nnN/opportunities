@@ -2,6 +2,7 @@ import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { FilterChips } from "@/components/dashboard/filter-chips";
 import { FreshnessBadge } from "@/components/dashboard/freshness-badge";
 import { PaginationControls } from "@/components/dashboard/pagination-controls";
+import { ProfileTab } from "@/components/dashboard/profile-tab";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { StaleSyncBanner } from "@/components/dashboard/stale-sync-banner";
 import { StatusPill } from "@/components/dashboard/status-pill";
@@ -33,6 +34,7 @@ import {
   type OpportunitySource,
   type OpportunityStatus,
 } from "@/db/queries/opportunities";
+import { getAllProfileFields } from "@/db/queries/profile";
 import {
   getLatestSyncPerSource,
   type KnownSource,
@@ -65,26 +67,31 @@ function parsePage(raw: string | undefined): number {
   return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
 }
 
-type TabValue = "internships" | "underclassmen" | "benefits";
+type TabValue = "internships" | "underclassmen" | "benefits" | "profile";
 
-const TAB_SOURCE: Record<Exclude<TabValue, "benefits">, OpportunitySource> = {
+const TAB_SOURCE: Record<Exclude<TabValue, "benefits" | "profile">, OpportunitySource> = {
   internships: "summer2027-internships",
   underclassmen: "underclassmen-opportunities",
 };
 
 /**
- * Every tab's freshness-badge/stale-banner source, `benefits` included
- * (unlike `TAB_SOURCE`, which only covers `opportunities` table sources).
- * DISC-04 applies to all 3 tabs, not just the two `opportunities`-backed ones.
+ * Every GitHub-synced tab's freshness-badge/stale-banner source. `profile`
+ * is deliberately absent — it is Juan's own manually-edited data, not a
+ * GitHub-synced source (DISC-04 doesn't apply to it), so this is now
+ * `Partial` and every read goes through `TAB_SYNC_SOURCE[activeTab]`, which
+ * is `undefined` while the Perfil tab is active — callers must handle that,
+ * never assume a value exists for every `TabValue`.
  */
-const TAB_SYNC_SOURCE: Record<TabValue, KnownSource> = {
+const TAB_SYNC_SOURCE: Partial<Record<TabValue, KnownSource>> = {
   internships: "summer2027-internships",
   underclassmen: "underclassmen-opportunities",
   benefits: "student-benefits",
 };
 
 function parseTab(raw: string | undefined): TabValue {
-  return raw === "underclassmen" || raw === "benefits" ? raw : "internships";
+  return raw === "underclassmen" || raw === "benefits" || raw === "profile"
+    ? raw
+    : "internships";
 }
 
 function parseStatus(raw: string | undefined): OpportunityStatus | undefined {
@@ -131,6 +138,7 @@ export default async function Home({
     internships,
     underclassmen,
     benefits,
+    profileFields,
     internshipsCount,
     underclassmenCount,
     benefitsCount,
@@ -149,6 +157,10 @@ export default async function Home({
     activeTab === "benefits"
       ? listBenefits(benefitFilters, pagination)
       : Promise.resolve([]),
+    // Perfil is Juan's own manually-edited data, never GitHub-synced — only
+    // fetched when its tab is active, same conditional-fetch convention as
+    // the other 3 tabs (05-01-PLAN.md Task 1).
+    activeTab === "profile" ? getAllProfileFields() : Promise.resolve([]),
     activeTab === "internships"
       ? Promise.resolve(-1)
       : countActiveOpportunities("summer2027-internships"),
@@ -159,24 +171,33 @@ export default async function Home({
     // Filtered total for the active tab only — feeds PaginationControls's
     // "Mostrando X–Y de Z" and the aria-live result count below. Distinct
     // from countActive{Opportunities,Benefits} above, which are always
-    // scoped to isActive: true regardless of the current filter set.
+    // scoped to isActive: true regardless of the current filter set. Perfil
+    // has no pagination/filter concept (UI-SPEC: a low-cardinality grouped
+    // list, not a dense paginated table) — resolved with a placeholder,
+    // overridden below by `profileFields.length` once fields are in hand.
     activeTab === "benefits"
       ? countBenefits(benefitFilters)
-      : countOpportunities(TAB_SOURCE[activeTab], opportunityFilters),
+      : activeTab === "profile"
+        ? Promise.resolve(-1)
+        : countOpportunities(TAB_SOURCE[activeTab], opportunityFilters),
     // Active tab's own "actionable within the current filter" badge
     // count — previously derived by filtering the full fetched array
     // client-side (countActive()), which breaks once only one page is
     // ever in memory. Same isActive-scoped definition, computed in SQL.
+    // Perfil has no badge count (UI-SPEC: "una cuarta TabsTrigger plana
+    // 'Perfil' ... sin badge de conteo").
     activeTab === "benefits"
       ? countBenefits({ ...benefitFilters, isActive: true })
-      : countOpportunities(TAB_SOURCE[activeTab], {
-          ...opportunityFilters,
-          status: "open",
-        }),
-    activeTab === "benefits"
+      : activeTab === "profile"
+        ? Promise.resolve(-1)
+        : countOpportunities(TAB_SOURCE[activeTab], {
+            ...opportunityFilters,
+            status: "open",
+          }),
+    activeTab === "benefits" || activeTab === "profile"
       ? Promise.resolve([])
       : getDistinctCategories(TAB_SOURCE[activeTab]),
-    activeTab === "benefits"
+    activeTab === "benefits" || activeTab === "profile"
       ? Promise.resolve([])
       : getDistinctRoleTypes(TAB_SOURCE[activeTab]),
     getLatestSyncPerSource(db),
@@ -194,7 +215,13 @@ export default async function Home({
     ...underclassmen.map((row) => row.externalId),
   ]);
 
-  const activeTabSyncRow = syncBySource[TAB_SYNC_SOURCE[activeTab]];
+  // `TAB_SYNC_SOURCE` is `Partial` — `profile` has no GitHub-synced source,
+  // so this is `undefined` while the Perfil tab is active (guarded here,
+  // not just at the `FreshnessBadge`/`StaleSyncBanner` call sites below).
+  const activeTabSyncSource = TAB_SYNC_SOURCE[activeTab];
+  const activeTabSyncRow = activeTabSyncSource
+    ? syncBySource[activeTabSyncSource]
+    : undefined;
 
   // Filtered result count for the active tab only — announced via
   // aria-live so a screen-reader user gets feedback when search/filter
@@ -202,7 +229,10 @@ export default async function Home({
   // Server Component navigation with no page reload (A11Y.md). Now the
   // filtered TOTAL (across all pages), not `.length` over the fetched
   // array — `.length` broke once only one page's rows are ever in memory.
-  const activeResultCount = activeFilteredTotal;
+  // Perfil has no filter/pagination concept, so it reports its own simple
+  // field count instead of the `-1` placeholder resolved above.
+  const activeResultCount =
+    activeTab === "profile" ? profileFields.length : activeFilteredTotal;
 
   return (
     <div className="flex h-dvh flex-col">
@@ -234,6 +264,12 @@ export default async function Home({
               Beneficios .edu{" "}
               <Count n={activeTab === "benefits" ? activeBadgeCount : benefitsCount} />
             </TabsTrigger>
+            {/*
+              No count badge (UI-SPEC "Layout — Perfil Tab": "una cuarta
+              TabsTrigger plana 'Perfil'" — Juan's profile has no
+              open/active-vs-total distinction to badge).
+            */}
+            <TabsTrigger value="profile">Perfil</TabsTrigger>
           </TabsList>
 
           {/*
@@ -255,7 +291,15 @@ export default async function Home({
             <FilterChips categories={categories} roleTypes={roleTypes} />
           </div>
 
-          <FreshnessBadge latestRow={activeTabSyncRow} />
+          {/*
+            Perfil is never GitHub-synced (it's Juan's own manually-edited
+            data), so the freshness badge — whose entire meaning is "time
+            since last sync" — is skipped outright rather than shown with a
+            meaningless null state (05-01-PLAN.md Task 1).
+          */}
+          {activeTab !== "profile" && (
+            <FreshnessBadge latestRow={activeTabSyncRow ?? null} />
+          )}
         </div>
 
         {/*
@@ -273,7 +317,7 @@ export default async function Home({
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
           <StaleSyncBanner
-            latestRow={syncBySource[TAB_SYNC_SOURCE.internships]}
+            latestRow={syncBySource[TAB_SYNC_SOURCE.internships!]}
           />
           <VirtualizedOpportunitiesTable
             rows={internships}
@@ -294,7 +338,7 @@ export default async function Home({
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
           <StaleSyncBanner
-            latestRow={syncBySource[TAB_SYNC_SOURCE.underclassmen]}
+            latestRow={syncBySource[TAB_SYNC_SOURCE.underclassmen!]}
           />
           <VirtualizedOpportunitiesTable
             rows={underclassmen}
@@ -308,11 +352,25 @@ export default async function Home({
           value="benefits"
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <StaleSyncBanner latestRow={syncBySource[TAB_SYNC_SOURCE.benefits]} />
+          <StaleSyncBanner
+            latestRow={syncBySource[TAB_SYNC_SOURCE.benefits!]}
+          />
           <div className="min-h-0 flex-1 overflow-auto">
             <BenefitsTable rows={benefits} />
           </div>
           <PaginationControls total={activeFilteredTotal} pageSize={PAGE_SIZE} />
+        </TabsContent>
+
+        {/*
+          Perfil (PROFILE-01/02): no StaleSyncBanner/PaginationControls —
+          it's not a GitHub-synced, paginated data source, it's Juan's own
+          flexible key-value profile (05-CONTEXT.md).
+        */}
+        <TabsContent
+          value="profile"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          <ProfileTab fields={profileFields} />
         </TabsContent>
       </DashboardTabs>
     </div>
