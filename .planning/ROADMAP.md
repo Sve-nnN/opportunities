@@ -33,7 +33,11 @@ Juan necesita poder mandar cualquier oportunidad (Internships/Underclassmen) a u
   3. El dropdown de estado de una postulación muestra y permite seleccionar las nuevas etapas intermedias (`auto_fill_in_progress` / `ready_to_review` / `submitted`)
   4. `applications.status` acepta esas etapas intermedias además de las 6 ya existentes
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Perfil de datos flexible: schema `profile_fields`, queries, Server Actions, pestaña "Perfil" (ver/agregar/editar/carga inicial) (PROFILE-01, PROFILE-02)
+- [ ] 05-02-PLAN.md — Etapas intermedias de tracking: extender `APPLICATION_STATUSES`, restringir selección manual, extender `StatusDropdown` (TRACK-05, TRACK-06)
 
 **UI hint**: yes
 
@@ -74,7 +78,7 @@ Fases de v1.1 en orden numérico: 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. Perfil y Etapas de Tracking | 0/TBD | Not started | - |
+| 5. Perfil y Etapas de Tracking | 0/2 | Not started | - |
 | 6. Callback API de Auto-apply | 0/TBD | Not started | - |
 | 7. Send to AI | 0/TBD | Not started | - |
 </content>
