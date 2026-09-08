@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -119,6 +120,56 @@ export const profileFields = pgTable("profile_fields", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Auditable log of every `POST /api/applications/[externalId]/apply-session`
+ * callback call (Phase 6, CALLBACK-01/02, AUDIT-01/02). One NEW row per
+ * call — unlike `applications`/`profileFields`, this table is deliberately
+ * NOT unique on `opportunityExternalId`, since a single application can
+ * receive multiple auto-apply callback calls over its lifetime (session
+ * starts, pauses, resumes, finishes) and every one of them must remain
+ * visible, not just the latest (06-CONTEXT.md: "Una fila nueva por cada
+ * llamada al endpoint").
+ *
+ * `opportunityExternalId` references `opportunities.externalId` by VALUE,
+ * never the serial `id` — same anti-pattern rule `applications` already
+ * follows (research/ARCHITECTURE.md Anti-Pattern 2).
+ *
+ * `sentFields` is the `{key,label,value}[]` array exactly as received in
+ * the callback body, unmodified — a snapshot of what that specific session
+ * reported sending to the site, independent of whatever `profileFields`
+ * looks like today or later (06-CONTEXT.md: "sentFields se guarda tal
+ * cual"). `profileUpdates` is the raw `{label,value,category}[]` the
+ * caller submitted (nullable — not every session learns new fields).
+ * `newlyLearnedKeys` is computed server-side inside the route's
+ * transaction (never trusted from the client) by diffing each
+ * `profileUpdates` entry's derived key against whether a `profile_fields`
+ * row already existed for it.
+ */
+export const applicationHistory = pgTable(
+  "application_history",
+  {
+    id: serial("id").primaryKey(),
+    opportunityExternalId: text("opportunity_external_id").notNull(),
+    // The auto-apply status reported in this specific call — one of
+    // AUTO_APPLY_CALLBACK_STATUSES (src/lib/application-status.ts), stored
+    // as free text here for the same zero-migration reason `applications.status`
+    // is free text.
+    status: text("status").notNull(),
+    notes: text("notes"),
+    sentFields: jsonb("sent_fields").notNull(),
+    profileUpdates: jsonb("profile_updates"),
+    newlyLearnedKeys: jsonb("newly_learned_keys").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("application_history_opportunity_external_id_idx").on(
+      table.opportunityExternalId,
+    ),
+  ],
+);
 
 /**
  * Records every sync run (scheduled or manual) per source, so a silently
