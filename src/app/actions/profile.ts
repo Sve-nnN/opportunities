@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { upsertProfileField } from "@/db/queries/profile";
+import { updateProfileFieldValue as updateProfileFieldValueQuery, upsertProfileField } from "@/db/queries/profile";
 import { normalizeToKey } from "@/lib/profile-key";
 
 // T-05-01 (threat_model): label/value/category are untrusted client input —
@@ -15,6 +15,11 @@ const entrySchema = z.object({
   value: z.string().trim().min(1).max(2000),
   category: z.string().trim().min(1).max(200),
 });
+const keySchema = z.string().min(1);
+// Same 2000-char cap as saveProfileFields' entrySchema.value and
+// applications.ts's notesSchema — one length ceiling for free-text values
+// across this codebase.
+const valueSchema = z.string().trim().min(1).max(2000);
 
 export interface SaveProfileFieldsResult {
   ok: boolean;
@@ -62,4 +67,43 @@ export async function saveProfileFields(
   revalidatePath("/");
 
   return { ok: true, savedCount: validEntries.length };
+}
+
+export interface UpdateProfileFieldValueResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Server Action invoked from the per-row pencil-edit popover's debounced
+ * autosave (parity with `updateApplicationNotes` in
+ * `app/actions/applications.ts`). `key` here always comes from an already-
+ * rendered row (never client-derived from a label), but is still validated
+ * as a non-empty string before reaching the query layer.
+ */
+export async function updateProfileFieldValue(
+  key: string,
+  value: string,
+): Promise<UpdateProfileFieldValueResult> {
+  const parsedKey = keySchema.safeParse(key);
+  const parsedValue = valueSchema.safeParse(value);
+
+  if (!parsedKey.success) {
+    return { ok: false, error: "Missing key" };
+  }
+  if (!parsedValue.success) {
+    return { ok: false, error: "Value must be 1-2000 characters" };
+  }
+
+  const updated = await updateProfileFieldValueQuery(
+    parsedKey.data,
+    parsedValue.data,
+  );
+  if (!updated) {
+    return { ok: false, error: `No profile field found for key: ${key}` };
+  }
+
+  revalidatePath("/");
+
+  return { ok: true };
 }

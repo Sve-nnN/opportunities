@@ -1,4 +1,4 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { profileFields } from "@/db/schema";
@@ -51,4 +51,25 @@ export async function upsertProfileField(
         updatedAt: new Date(),
       },
     });
+}
+
+/**
+ * Deliberately NOT an upsert (unlike `upsertProfileField` above) — the
+ * pencil-edit popover only ever opens on a row that already exists in the
+ * DOM, so a `key` that doesn't match any row means the row was
+ * deleted/renamed elsewhere. Updates ONLY `value` (+ `updatedAt`), leaving
+ * `label`/`category`/`source` untouched, and returns `false` (no row
+ * touched) instead of resurrecting a row for an unknown `key`.
+ */
+export async function updateProfileFieldValue(
+  key: string,
+  value: string,
+): Promise<boolean> {
+  const updatedRows = await db
+    .update(profileFields)
+    .set({ value, updatedAt: new Date() })
+    .where(eq(profileFields.key, key))
+    .returning({ id: profileFields.id });
+
+  return updatedRows.length > 0;
 }
