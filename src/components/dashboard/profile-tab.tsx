@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Pencil } from "lucide-react";
+import { AlertTriangle, Pencil } from "lucide-react";
 
 import { saveProfileFields, updateProfileFieldValue } from "@/app/actions/profile";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,30 @@ import { cn } from "@/lib/utils";
 const DEBOUNCE_MS = 500;
 
 type SaveState = "idle" | "saving" | "saved";
+
+/**
+ * 05-REVIEW.md CR-01: `normalizeToKey` is not injective, so a submitted
+ * label can silently collide onto the `key` of a different pre-existing
+ * label (e.g. "LinkedIn" and "linkedin" both become `key = "linkedin"`),
+ * overwriting that row's value/category. `saveProfileFields` now reports
+ * this back as `result.collisions`; render it as a visible alert (icon +
+ * text, never color alone per A11Y.md) instead of the plain "Guardado"
+ * text so Juan knows an overwrite — not a fresh insert — just happened.
+ */
+function CollisionWarning({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-foreground"
+    >
+      <AlertTriangle
+        aria-hidden="true"
+        className="mt-0.5 size-3.5 shrink-0 text-destructive"
+      />
+      <span>{message}</span>
+    </div>
+  );
+}
 
 /**
  * "Perfil" tab (PROFILE-01/02, 05-CONTEXT.md): Juan's flexible key-value
@@ -140,14 +164,22 @@ function AddFieldPopover({ categories }: { categories: string[] }) {
   const [label, setLabel] = useState("");
   const [value, setValue] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [collisionWarning, setCollisionWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSave() {
     setSaveState("saving");
+    setCollisionWarning(null);
     startTransition(async () => {
       const result = await saveProfileFields([{ label, value, category }]);
       if (result.ok) {
         setSaveState("saved");
+        if (result.collisions && result.collisions.length > 0) {
+          const { existingLabel } = result.collisions[0];
+          setCollisionWarning(
+            `"${label}" usa la misma clave interna que "${existingLabel}" y sobrescribió su valor.`,
+          );
+        }
         // Popover stays open (UI-SPEC: "popover stays open after save so
         // Juan can add another field immediately") — only the inputs clear.
         setCategory("");
@@ -232,6 +264,7 @@ function AddFieldPopover({ categories }: { categories: string[] }) {
               ? "Guardado"
               : " "}
         </p>
+        {collisionWarning && <CollisionWarning message={collisionWarning} />}
       </PopoverContent>
     </Popover>
   );
@@ -357,6 +390,7 @@ function BulkLoadPopover() {
     () => BULK_LOAD_SEED_FIELDS.map(() => ""),
   );
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [collisionWarning, setCollisionWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleValueChange(index: number, next: string) {
@@ -383,14 +417,29 @@ function BulkLoadPopover() {
     }
 
     setSaveState("saving");
+    setCollisionWarning(null);
     startTransition(async () => {
       const result = await saveProfileFields(entries);
       if (result.ok) {
         setSaveState("saved");
         setValues(BULK_LOAD_SEED_FIELDS.map(() => ""));
-        // Closes on success (UI-SPEC: "this is a one-time bulk action, not
-        // a repeat-and-add flow") — unlike AddFieldPopover.
-        setOpen(false);
+        if (result.collisions && result.collisions.length > 0) {
+          // 05-REVIEW.md CR-01: at least one seed label collided onto an
+          // existing row with a different label and overwrote it — keep
+          // the popover open so Juan actually sees the warning instead of
+          // auto-closing on a silent overwrite (unlike the normal
+          // "closes on success" bulk-load behavior).
+          const names = result.collisions
+            .map((c) => `"${c.label}" → "${c.existingLabel}"`)
+            .join(", ");
+          setCollisionWarning(
+            `${result.collisions.length} campo(s) sobrescribieron uno existente: ${names}.`,
+          );
+        } else {
+          // Closes on success (UI-SPEC: "this is a one-time bulk action,
+          // not a repeat-and-add flow") — unlike AddFieldPopover.
+          setOpen(false);
+        }
       } else {
         console.error("[BulkLoadPopover] failed to save fields:", result.error);
         setSaveState("idle");
@@ -438,6 +487,7 @@ function BulkLoadPopover() {
               ? "Guardado"
               : " "}
         </p>
+        {collisionWarning && <CollisionWarning message={collisionWarning} />}
       </PopoverContent>
     </Popover>
   );
