@@ -15,6 +15,13 @@
       "when": 1788832494459,
       "tag": "0001_wild_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788896670409,
+      "tag": "0002_yielding_morgan_stark",
+      "breakpoints": true
     }
   ]
 }

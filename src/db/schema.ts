@@ -89,6 +89,38 @@ export const applications = pgTable("applications", {
 });
 
 /**
+ * Juan's flexible key-value profile (PROFILE-01/02, Phase 5), EAV pattern
+ * per research/STACK.md — no rigid schema, so both Juan (manual add/edit)
+ * and the future Phase 6 callback (`source: 'ai_session'`) can write rows
+ * without a migration per new field.
+ *
+ * `key` is the UNIQUE upsert target (never the serial `id`, same convention
+ * as `applications.opportunityExternalId`) and is ALWAYS derived server-side
+ * via `normalizeToKey(label)` (src/lib/profile-key.ts) — no Server Action in
+ * this codebase accepts a client-provided `key` (05-01-PLAN.md threat_model
+ * T-05-01). `label` is the human-readable text shown in the UI; `category`
+ * is free-text used only to group rows visually ("contacto", "links", etc).
+ * `source` defaults to 'manual' (this phase); Phase 6's callback will write
+ * 'ai_session' onto this same table, no additional migration needed. Last
+ * write wins on conflict — CONTEXT.md: "sin versionado/historial de cambios
+ * de perfil."
+ */
+export const profileFields = pgTable("profile_fields", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  value: text("value").notNull(),
+  category: text("category").notNull(),
+  source: text("source").notNull().default("manual"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
  * Records every sync run (scheduled or manual) per source, so a silently
  * failing/empty sync is always traceable instead of just serving stale data
  * forever (research/PITFALLS.md Pitfall 3 / UX Pitfall).
