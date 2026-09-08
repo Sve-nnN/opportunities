@@ -315,6 +315,13 @@ function EditFieldPopover({ field }: { field: ProfileField }) {
             `[EditFieldPopover] failed to save value for ${field.key}:`,
             result.error,
           );
+          // 05-REVIEW.md WR-01: revert to the last-known-good value instead
+          // of leaving the rejected/whitespace-only text displayed with no
+          // visible indication the write never landed — e.g. clearing a
+          // field is rejected by valueSchema's .min(1), so without this the
+          // input would silently show blank while the DB still holds the
+          // old value until a full page reload re-syncs it.
+          setValue(field.value);
           setSaveState("idle");
         }
       });
