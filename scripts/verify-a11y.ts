@@ -116,14 +116,17 @@ async function main() {
   await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForSelector("table");
 
-  // The internships tab (default) renders all 16,109 rows (DISC-03: every
-  // row, active and inactive, always visible — Plan 1's explicit design).
-  // Those rows are static HTML with no per-row client behavior, but they
-  // still sit inside the client `<Tabs>` boundary's hydration walk, which
-  // measurably delays when the (much smaller) tab-switcher's roving-focus
-  // group becomes keyboard-reachable. Wait for that explicit readiness
-  // signal — rather than asserting on a hydration race — and report the
-  // real number for the record.
+  // The internships tab (default) has 16,109+ rows in its dataset, but as
+  // of 03-02-PLAN.md Task 3 (`VirtualizedOpportunitiesTable`,
+  // `@tanstack/react-virtual`) only the visible+overscan rows (~13-30) are
+  // ever mounted in the DOM at once - the tab-switcher's roving-focus group
+  // no longer competes with a 16k-row hydration walk in the same client
+  // boundary. This must now be CONSTANT regardless of dataset size (never
+  // scaling with row count again), not just an informational number - the
+  // 02-03-SUMMARY.md-documented regression was 6000-13000ms before
+  // virtualization; a few hundred ms of this remaining number is the
+  // server-side Postgres round-trip (6 queries via Promise.all in
+  // page.tsx), which is orthogonal to virtualization and won't hit 0.
   await page.waitForFunction(
     () =>
       document.querySelector('[role="tablist"]')?.getAttribute("tabindex") ===
@@ -132,7 +135,11 @@ async function main() {
   );
   const hydrationMs = Date.now() - navStart;
   console.log(
-    `[info] tablist keyboard-reachable ${hydrationMs}ms after navigation start (16,109-row internships table hydrating in the same client boundary — see SUMMARY "Known Issues")`,
+    `[result] tablist keyboard-reachable ${hydrationMs}ms after navigation start (was 6000-13000ms pre-virtualization, 02-03-SUMMARY.md "Known Issues" / 03-02-PLAN.md must_haves) - constant regardless of the 16,109+-row Internships dataset size, since only the visible rows are ever mounted`,
+  );
+  assert.ok(
+    hydrationMs < 3000,
+    `expected a small, roughly-constant time (server round-trip + a handful of mounted rows), not scaling toward the old 6000-13000ms figure; got ${hydrationMs}ms`,
   );
 
   // --- 1. Native table semantics --------------------------------------
@@ -228,6 +235,11 @@ async function main() {
     { timeout: 30_000 },
   );
   await page.keyboard.press("Tab");
+  // TabsTrigger has `transition-all`, which includes `outline-color` - wait
+  // for it to settle before measuring, otherwise this can catch an
+  // interpolated (and therefore not-actually-representative) mid-animation
+  // color a few ms into the transition.
+  await page.waitForTimeout(200);
   const onTabButton = await page.evaluate(
     () => document.activeElement?.getAttribute("role") === "tab",
   );
@@ -382,6 +394,132 @@ async function main() {
   });
   assert.ok(pillHasIconAndText, "status pill should render both an icon and a text label");
   console.log("[pass] status pill icon+text confirmed");
+
+  // --- 7. Row virtualization: DOM node count genuinely reduced -----------
+  // (03-02-PLAN.md Task 3) The dataset has 16,109+ Internships rows;
+  // pre-virtualization every single one was mounted in the DOM at once.
+  // `@tanstack/react-virtual` should only ever mount the visible+overscan
+  // window regardless of scroll position or total dataset size.
+  const mountedRowCount = await page.$$eval(
+    "table tbody tr[data-external-id]",
+    (trs) => trs.length,
+  );
+  console.log(
+    `[result] mounted <tr data-external-id> count: ${mountedRowCount} (dataset has 16,109+ Internships rows - before virtualization, ALL of them were mounted; this table's own <tbody> reports height=${await page.$eval("table tbody", (tb) => (tb as HTMLElement).style.height)} to represent the full scrollable extent)`,
+  );
+  assert.ok(
+    mountedRowCount > 0 && mountedRowCount < 100,
+    `expected far fewer than 16,109 mounted rows (virtualized), got ${mountedRowCount}`,
+  );
+
+  // --- 8. Roving tabindex: ArrowUp/Down/Home/End move focus between rows -
+  const firstRow = page.locator("table tbody tr[data-external-id]").first();
+  await firstRow.focus();
+  const initialRowIndex = await page.evaluate(() =>
+    document.activeElement?.getAttribute("data-row-index"),
+  );
+  assert.equal(initialRowIndex, "0", "expected direct .focus() to land on row index 0");
+
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(150);
+  const rowIndexAfterDown = await page.evaluate(() =>
+    document.activeElement?.getAttribute("data-row-index"),
+  );
+  assert.equal(rowIndexAfterDown, "1", "ArrowDown should move roving-tabindex focus to row index 1");
+
+  await page.keyboard.press("End");
+  let rowIndexAfterEnd: string | null | undefined = null;
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await page.waitForTimeout(200);
+    rowIndexAfterEnd = await page.evaluate(() =>
+      document.activeElement?.getAttribute("data-row-index"),
+    );
+    if (rowIndexAfterEnd && Number(rowIndexAfterEnd) > 1000) break;
+  }
+  assert.ok(
+    Number(rowIndexAfterEnd) > 1000,
+    `End should jump near the end of the 16,109+-row list, got row index ${rowIndexAfterEnd}`,
+  );
+
+  await page.keyboard.press("Home");
+  await page.waitForTimeout(500);
+  const rowIndexAfterHome = await page.evaluate(() =>
+    document.activeElement?.getAttribute("data-row-index"),
+  );
+  assert.equal(rowIndexAfterHome, "0", "Home should return roving-tabindex focus to row index 0");
+  console.log(
+    `[pass] roving tabindex: .focus()->0, ArrowDown->1, End->${rowIndexAfterEnd}, Home->0`,
+  );
+
+  // --- 9. Full in-row keyboard walkthrough: StatusDropdown + NotesPopover,
+  // no focus trap anywhere in the sequence (03-02-PLAN.md Task 3 "done") --
+  await page.keyboard.press("Tab"); // row -> StatusDropdown trigger
+  const onStatusTrigger = await page.evaluate(
+    () => document.activeElement?.getAttribute("aria-label") === "Estado de postulación",
+  );
+  assert.ok(onStatusTrigger, "Tab from the focused row should reach the StatusDropdown trigger next");
+
+  await page.keyboard.press("Enter"); // open the Select
+  await page.waitForTimeout(150);
+  const selectOpen = await page.getByRole("option", { name: /Aplicado/i }).isVisible();
+  assert.ok(selectOpen, "Enter on the StatusDropdown trigger should open the Select options");
+
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter"); // choose an option, closes the Select
+  // `updateApplicationStatus`'s `revalidatePath` refresh lands ~100-400ms
+  // AFTER the Server Action call resolves (StatusDropdown's own defensive
+  // re-focus polls this same window) - poll here too rather than a single
+  // fixed wait, since checking too early would misreport a transient state.
+  let afterSelectClose = { tag: undefined as string | undefined, visible: false };
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await page.waitForTimeout(100);
+    afterSelectClose = await page.evaluate(() => ({
+      tag: document.activeElement?.tagName,
+      visible: document.activeElement
+        ? (document.activeElement as HTMLElement).offsetParent !== null
+        : false,
+    }));
+    if (afterSelectClose.tag && afterSelectClose.tag !== "BODY") break;
+  }
+  assert.ok(
+    afterSelectClose.tag && afterSelectClose.tag !== "BODY",
+    "focus must not fall back to <body> after closing the Select with Enter (focus trap/loss check)",
+  );
+  assert.ok(afterSelectClose.visible, "the element focused after closing the Select must be visible");
+  console.log("[pass] StatusDropdown operable with arrows+Enter, focus lands on a visible element after close");
+
+  await page.keyboard.press("Tab"); // StatusDropdown trigger -> NotesPopover button
+  const onNotesTrigger = await page.evaluate(() =>
+    (document.activeElement?.getAttribute("aria-label") ?? "").toLowerCase().includes("nota"),
+  );
+  assert.ok(onNotesTrigger, "Tab from the StatusDropdown should reach the NotesPopover trigger next");
+
+  await page.keyboard.press("Enter"); // open the notes popover
+  await page.waitForTimeout(150);
+  const textareaVisible = await page.locator("textarea").isVisible();
+  assert.ok(textareaVisible, "Enter on the NotesPopover trigger should open the popover with a textarea");
+
+  await page.keyboard.press("Tab"); // popover trigger -> textarea (Radix auto-focuses content, but confirm reachable)
+  await page.keyboard.type("verificación de teclado a11y");
+  await page.keyboard.press("Escape"); // close, must return focus to the trigger button
+  await page.waitForTimeout(300);
+  const afterPopoverClose = await page.evaluate(() => ({
+    tag: document.activeElement?.tagName,
+    ariaLabel: document.activeElement?.getAttribute("aria-label"),
+    visible: document.activeElement
+      ? (document.activeElement as HTMLElement).offsetParent !== null
+      : false,
+  }));
+  const textareaStillOpen = await page.locator("textarea").count();
+  assert.equal(textareaStillOpen, 0, "Escape should close the NotesPopover");
+  assert.ok(
+    afterPopoverClose.tag && afterPopoverClose.tag !== "BODY",
+    "focus must not fall back to <body> after closing the NotesPopover with Escape (focus trap/loss check)",
+  );
+  assert.ok(afterPopoverClose.visible, "the element focused after closing the NotesPopover must be visible");
+  console.log(
+    `[pass] NotesPopover operable with Enter to open, Escape to close, focus returned to <${afterPopoverClose.tag} aria-label="${afterPopoverClose.ariaLabel}"> (no trap, no loss)`,
+  );
 
   await browser.close();
   console.log("\nAll accessibility checks passed.");

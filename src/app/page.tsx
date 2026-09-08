@@ -1,13 +1,10 @@
-import { ExternalLink } from "lucide-react";
-
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { FilterChips } from "@/components/dashboard/filter-chips";
 import { FreshnessBadge } from "@/components/dashboard/freshness-badge";
-import { NotesPopover } from "@/components/dashboard/notes-popover";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { StaleSyncBanner } from "@/components/dashboard/stale-sync-banner";
-import { StatusDropdown } from "@/components/dashboard/status-dropdown";
 import { StatusPill } from "@/components/dashboard/status-pill";
+import { VirtualizedOpportunitiesTable } from "@/components/dashboard/virtualized-opportunities-table";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -19,10 +16,7 @@ import {
 } from "@/components/ui/table";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/db/client";
-import {
-  type ApplicationRecord,
-  getApplicationsByExternalIds,
-} from "@/db/queries/applications";
+import { getApplicationsByExternalIds } from "@/db/queries/applications";
 import { listBenefits } from "@/db/queries/benefits";
 import {
   getDistinctCategories,
@@ -205,12 +199,10 @@ export default async function Home({
           <StaleSyncBanner
             latestRow={syncBySource[TAB_SYNC_SOURCE.internships]}
           />
-          <div className="min-h-0 flex-1 overflow-auto">
-            <OpportunitiesTable
-              rows={internships}
-              applicationsByExternalId={applicationsByExternalId}
-            />
-          </div>
+          <VirtualizedOpportunitiesTable
+            rows={internships}
+            applicationsByExternalId={applicationsByExternalId}
+          />
         </TabsContent>
 
         {/*
@@ -227,13 +219,11 @@ export default async function Home({
           <StaleSyncBanner
             latestRow={syncBySource[TAB_SYNC_SOURCE.underclassmen]}
           />
-          <div className="min-h-0 flex-1 overflow-auto">
-            <OpportunitiesTable
-              rows={underclassmen}
-              applicationsByExternalId={applicationsByExternalId}
-              deemphasized
-            />
-          </div>
+          <VirtualizedOpportunitiesTable
+            rows={underclassmen}
+            applicationsByExternalId={applicationsByExternalId}
+            deemphasized
+          />
         </TabsContent>
 
         <TabsContent
@@ -265,136 +255,6 @@ function Count({ n }: { n: number }) {
  */
 function countActive(rows: { isActive: boolean }[]): number {
   return rows.filter((row) => row.isActive).length;
-}
-
-type OpportunityRow = Awaited<ReturnType<typeof listOpportunities>>[number];
-
-/**
- * Dense, native `<table>` shared by the Internships and Underclassmen tabs
- * (both read from `opportunities`, just a different `source`). Kept inline
- * rather than split into its own file since it has exactly two
- * near-identical callers — see 02-01-PLAN.md Task 3.
- */
-function OpportunitiesTable({
-  rows,
-  applicationsByExternalId,
-  deemphasized = false,
-}: {
-  rows: OpportunityRow[];
-  applicationsByExternalId: Map<string, ApplicationRecord>;
-  deemphasized?: boolean;
-}) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead scope="col" className={stickyHeadClass}>
-            Company
-          </TableHead>
-          <TableHead scope="col" className={stickyHeadClass}>
-            Title
-          </TableHead>
-          <TableHead scope="col" className={stickyHeadClass}>
-            Location
-          </TableHead>
-          <TableHead scope="col" className={stickyHeadClass}>
-            Status
-          </TableHead>
-          <TableHead scope="col" className={stickyHeadClass}>
-            Postulación
-          </TableHead>
-          <TableHead scope="col" className={`${stickyHeadClass} text-right`}>
-            Link
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.length === 0 ? (
-          <TableRow className="hover:bg-transparent">
-            <TableCell
-              colSpan={6}
-              className="py-10 text-center text-muted-foreground"
-            >
-              No se encontraron resultados con estos filtros.
-            </TableCell>
-          </TableRow>
-        ) : (
-          rows.map((row) => (
-            <TableRow key={row.externalId} data-external-id={row.externalId}>
-              <TableCell
-                className={
-                  deemphasized
-                    ? "whitespace-normal text-muted-foreground"
-                    : "font-medium whitespace-normal"
-                }
-              >
-                {row.company ?? "—"}
-              </TableCell>
-              {/*
-                `line-clamp-*` sets `display: -webkit-box`, which would
-                break a `<td>`'s required `display: table-cell` — wrapped in
-                an inner `<div>` instead so the cell itself stays a valid
-                table participant. Caps runaway multi-value fields (e.g. an
-                Underclassmen "category" data-quality outlier, or a
-                multi-city Location list) from ballooning one row's height
-                to 4-10x normal and breaking the dense-scan thesis — see
-                02-03-SUMMARY.md "Deviations" for the measured mobile repro.
-              */}
-              <TableCell className="max-w-xs whitespace-normal">
-                <div className="line-clamp-2">{row.title ?? "—"}</div>
-              </TableCell>
-              <TableCell className="max-w-40 whitespace-normal text-muted-foreground">
-                <div className="line-clamp-2">{row.location ?? "—"}</div>
-              </TableCell>
-              <TableCell>
-                <StatusPill isActive={row.isActive} />
-              </TableCell>
-              <TableCell>
-                {/*
-                  A row missing from `applicationsByExternalId` was never
-                  tracked — defaults to "not_applied" ("por aplicar"), never
-                  null/undefined (03-01-PLAN.md must_haves). Always keyed by
-                  `externalId`, never the `opportunities` cache row's serial
-                  `id` (research/ARCHITECTURE.md Anti-Pattern 2).
-                */}
-                <div className="flex items-center gap-1">
-                  <StatusDropdown
-                    opportunityExternalId={row.externalId}
-                    status={
-                      applicationsByExternalId.get(row.externalId)?.status ??
-                      "not_applied"
-                    }
-                  />
-                  <NotesPopover
-                    opportunityExternalId={row.externalId}
-                    notes={
-                      applicationsByExternalId.get(row.externalId)?.notes ??
-                      null
-                    }
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                {row.url ? (
-                  <a
-                    href={row.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-primary underline underline-offset-4"
-                  >
-                    Ver fuente
-                    <ExternalLink aria-hidden="true" className="size-3.5" />
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
 }
 
 type BenefitRow = Awaited<ReturnType<typeof listBenefits>>[number];

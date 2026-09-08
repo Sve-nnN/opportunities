@@ -32,11 +32,20 @@ export function NotesPopover({
   opportunityExternalId,
   notes,
   pathToRevalidate = "/",
+  tabIndex,
 }: {
   opportunityExternalId: string;
   notes: string | null;
   /** Defaults to "/" since this dashboard is a single page (03-01-PLAN.md). */
   pathToRevalidate?: string;
+  /**
+   * Forwarded to the trigger button - lets a roving-tabindex parent
+   * (VirtualizedOpportunitiesTable, 03-02-PLAN.md Task 3) exclude this
+   * control from the normal Tab sequence when its row isn't the currently
+   * active one, so Tab enters the table exactly once instead of stepping
+   * through every mounted row's controls.
+   */
+  tabIndex?: number;
 }) {
   const [value, setValue] = useState(notes ?? "");
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -94,6 +103,7 @@ export function NotesPopover({
           variant="ghost"
           size="icon"
           aria-label={hasNotes ? "Ver/editar nota" : "Agregar nota"}
+          tabIndex={tabIndex}
           className="size-8"
         >
           <StickyNote
