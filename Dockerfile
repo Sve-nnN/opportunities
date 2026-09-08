@@ -14,6 +14,12 @@ RUN corepack enable pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Next.js imports route modules during the build's page-data-collection step
+# even for force-dynamic routes, so db/client.ts's env check needs a
+# placeholder present at build time. No query actually runs at build time
+# (force-dynamic defers all DB access to request time); the real value is
+# injected as a runtime env var by Dokploy, never baked into the image.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 RUN pnpm build
 
 # ---- runner ----
