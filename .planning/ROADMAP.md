@@ -14,7 +14,7 @@ Juan necesita una sola página que agregue en vivo internships, programas underc
 - [x] **Phase 1: Ingestion Foundation** - Parsers, normalización y cache en Postgres para las 3 fuentes, con sync programado y `external_id` estable (completed 2026-09-07)
 - [x] **Phase 2: Discovery UI** - Listado unificado, búsqueda/filtros y catálogo de beneficios sobre la capa de cache (completed 2026-09-07)
 - [x] **Phase 3: Application Tracking** - Estado y notas de postulaciones persistidos en DB, sincronizados entre dispositivos (completed 2026-09-07)
-- [ ] **Phase 4: Deploy** - App en producción vía Dokploy/Hetzner con subdominio de juan-tech.com y HTTPS funcionando
+- [x] **Phase 4: Deploy** - App en producción vía Dokploy/Hetzner con subdominio de juan-tech.com y HTTPS funcionando (completed 2026-09-08)
 
 ## Phase Details
 
@@ -98,10 +98,10 @@ Plans:
 
 Plans:
 
-- [ ] 04-01-PLAN.md — Verify Docker build (static assets), push repo to GitHub, create Dokploy project/application wired to it (buildType=dockerfile)
-- [ ] 04-02-PLAN.md — Apply production migrations via SSH tunnel, set DATABASE_URL/GITHUB_PAT/SYNC_TRIGGER_SECRET as Dokploy env vars
-- [ ] 04-03-PLAN.md — Trigger deploy, confirm build success and non-crash-looping runtime
-- [ ] 04-04-PLAN.md — Configure opportunities.juan-tech.com domain + Let's Encrypt SSL, final human-verify checkpoint
+- [x] 04-01-PLAN.md — Verify Docker build (static assets), push repo to GitHub, create Dokploy project/application wired to it (buildType=dockerfile)
+- [x] 04-02-PLAN.md — Apply production migrations via SSH tunnel, set DATABASE_URL/GITHUB_PAT/SYNC_TRIGGER_SECRET as Dokploy env vars
+- [x] 04-03-PLAN.md — Trigger deploy, confirm build success and non-crash-looping runtime
+- [x] 04-04-PLAN.md — Configure opportunities.juan-tech.com domain + Let's Encrypt SSL, final human-verify checkpoint
 
 ## Progress
 
@@ -113,5 +113,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Ingestion Foundation | 2/2 | Complete    | 2026-09-07 |
 | 2. Discovery UI | 3/3 | Complete    | 2026-09-07 |
 | 3. Application Tracking | 2/2 | Complete    | 2026-09-07 |
-| 4. Deploy | 0/TBD | Not started | - |
+| 4. Deploy | 4/4 | Complete    | 2026-09-08 |
 </content>

@@ -34,9 +34,9 @@
 
 ### Deploy (DEPLOY)
 
-- [ ] **DEPLOY-01**: La app corre como contenedor Docker desplegado vía la API de Dokploy en el hosting propio de Juan (`hosting/infra`), no en Vercel
-- [ ] **DEPLOY-02**: La app queda accesible en un subdominio de `juan-tech.com`, con DNS gestionado vía la API de Cloudflare y HTTPS funcionando (Cloudflare Full-strict + Let's Encrypt)
-- [ ] **DEPLOY-03**: Secretos (PAT de GitHub, credenciales de DB) están configurados como variables de entorno en Dokploy, con el PAT de solo lectura y con expiración
+- [x] **DEPLOY-01**: La app corre como contenedor Docker desplegado vía la API de Dokploy en el hosting propio de Juan (`hosting/infra`), no en Vercel
+- [x] **DEPLOY-02**: La app queda accesible en un subdominio de `juan-tech.com`, con DNS gestionado vía la API de Cloudflare y HTTPS funcionando (Cloudflare Full-strict + Let's Encrypt)
+- [x] **DEPLOY-03**: Secretos (PAT de GitHub, credenciales de DB) están configurados como variables de entorno en Dokploy, con el PAT de solo lectura y con expiración
 
 ## v2 Requirements
 
@@ -90,9 +90,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRACK-02 | Phase 3 (Plan 2) | Complete |
 | TRACK-03 | Phase 3 (Plan 1 status / Plan 2 notas) | Complete |
 | TRACK-04 | Phase 3 (Plan 1) | Complete |
-| DEPLOY-01 | Phase 4 | Pending |
-| DEPLOY-02 | Phase 4 | Pending |
-| DEPLOY-03 | Phase 4 | Pending |
+| DEPLOY-01 | Phase 4 | Complete |
+| DEPLOY-02 | Phase 4 | Complete |
+| DEPLOY-03 | Phase 4 | Complete |
 
 **Coverage:**
 
