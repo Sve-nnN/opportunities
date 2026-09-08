@@ -4,8 +4,11 @@ import { useRef, useTransition } from "react";
 import {
   Bookmark,
   CheckCircle2,
+  CircleCheck,
   CircleDashed,
   Clock,
+  Eye,
+  Hourglass,
   Send,
   XCircle,
   type LucideIcon,
@@ -19,8 +22,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/application-status";
+import {
+  MANUALLY_SELECTABLE_STATUSES,
+  type ApplicationStatus,
+} from "@/lib/application-status";
 import { cn } from "@/lib/utils";
+
+/**
+ * The 3 read-only auto-apply intermediate states (05-CONTEXT.md, 05-UI-
+ * SPEC.md "Status Extension"). A `Set` so the SelectTrigger's tint check
+ * below is a single O(1) lookup per render, not a `.includes()` scan.
+ */
+const AUTO_STATUSES = new Set<ApplicationStatus>([
+  "auto_fill_in_progress",
+  "ready_to_review",
+  "submitted",
+]);
 
 /**
  * Icon + Spanish label per status. Every option pairs an icon with text
@@ -39,6 +56,15 @@ const STATUS_META: Record<
   in_progress: { label: "En proceso", Icon: Clock },
   rejected: { label: "Rechazado", Icon: XCircle },
   accepted: { label: "Aceptado", Icon: CheckCircle2 },
+  // Read-only auto-apply intermediate states (05-CONTEXT.md, 05-UI-SPEC.md
+  // "Status Extension") — only ever set by the Phase 6 callback API, never
+  // selectable here (see MANUALLY_SELECTABLE_STATUSES/SelectContent below).
+  // Icons deliberately distinct from the 6 manual states' icons (Hourglass
+  // vs. in_progress's Clock, CircleCheck's thin outline vs. accepted's
+  // bolder two-tone CheckCircle2).
+  auto_fill_in_progress: { label: "Auto-fill en curso", Icon: Hourglass },
+  ready_to_review: { label: "Listo para revisar", Icon: Eye },
+  submitted: { label: "Enviado (auto-apply)", Icon: CircleCheck },
 };
 
 export function StatusDropdown({
@@ -102,6 +128,7 @@ export function StatusDropdown({
   }
 
   const CurrentIcon = STATUS_META[status].Icon;
+  const isAutoStatus = AUTO_STATUSES.has(status);
 
   return (
     <Select
@@ -114,7 +141,15 @@ export function StatusDropdown({
         size="sm"
         aria-label="Estado de postulación"
         tabIndex={tabIndex}
-        className={cn("w-[9.75rem] transition-opacity", isPending && "opacity-50")}
+        className={cn(
+          "w-[9.75rem] transition-opacity",
+          isPending && "opacity-50",
+          // Violet-tint surface signals "auto-set, Juan didn't pick this by
+          // hand" (05-UI-SPEC.md "Status Extension") — reuses the existing
+          // bg-accent/text-accent-foreground tokens (#1e1930/#e7e5e1), not a
+          // new 4th use of raw Signal Violet (DESIGN.md One Accent Rule).
+          isAutoStatus && "bg-accent text-accent-foreground",
+        )}
       >
         <SelectValue>
           <CurrentIcon aria-hidden="true" className="size-3.5 shrink-0" />
@@ -122,7 +157,7 @@ export function StatusDropdown({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {APPLICATION_STATUSES.map((value) => {
+        {MANUALLY_SELECTABLE_STATUSES.map((value) => {
           const { label, Icon } = STATUS_META[value];
           return (
             <SelectItem key={value} value={value}>

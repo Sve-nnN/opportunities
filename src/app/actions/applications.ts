@@ -7,13 +7,19 @@ import {
   upsertApplicationNotes,
   upsertApplicationStatus,
 } from "@/db/queries/applications";
-import { APPLICATION_STATUSES } from "@/lib/application-status";
+import { MANUALLY_SELECTABLE_STATUSES } from "@/lib/application-status";
 
 // T-03-01 (threat_model): the client dropdown's `status` value is untrusted
 // — a modified client could POST any string. Validate against the exact
-// 6-value enum before it ever reaches the DB; reject anything else instead
-// of writing it.
-const statusSchema = z.enum(APPLICATION_STATUSES);
+// 6-value manually-selectable enum before it ever reaches the DB; reject
+// anything else instead of writing it. T-05-04 (05-02-PLAN.md
+// threat_model) extends this: `MANUALLY_SELECTABLE_STATUSES` (6 values),
+// not `APPLICATION_STATUSES` (9 values), is the schema here on purpose —
+// the 3 new read-only auto-apply states (auto_fill_in_progress,
+// ready_to_review, submitted) must never be writable through this manual
+// Server Action, even by a modified client that POSTs one directly. Only
+// the Phase 6 callback API (out of this plan's scope) may set them.
+const statusSchema = z.enum(MANUALLY_SELECTABLE_STATUSES);
 const externalIdSchema = z.string().min(1);
 const pathSchema = z.string().min(1).startsWith("/");
 // T-03-03 (threat_model): free-text notes are untrusted client input that
