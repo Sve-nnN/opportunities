@@ -515,6 +515,73 @@ async function verifyHttpLayer(baseUrl: string) {
     if (originalProfileRow.length === 0) {
       await db.delete(profileFields).where(eq(profileFields.key, collisionKey));
     }
+
+    // (8) Genuine concurrent-request race — CR-01 (06-REVIEW.md) advisory-lock
+    // regression test. Unlike a sequential call, this fires two truly
+    // concurrent POSTs (Promise.all, no await between them) against the SAME
+    // externalId, set up so the outcome is ONLY guaranteed deterministic if
+    // the read-then-write (currentStatus check -> onConflictDoUpdate) is
+    // actually serialized end-to-end by pg_advisory_xact_lock, not just
+    // "read inside a transaction" (which under READ COMMITTED provides no
+    // such guarantee on its own).
+    //
+    // Setup: force applications.status = "ready_to_review" directly (not via
+    // the endpoint, to control the exact starting point regardless of what
+    // earlier steps in this script left behind). Then fire concurrently:
+    //   - Request A: target "submitted"        (ready_to_review -> submitted: always forward, must always succeed)
+    //   - Request B: target "ready_to_review"   (valid no-op IF it reads the
+    //     pre-A "ready_to_review" state; invalid backward IF it reads
+    //     post-A's committed "submitted" state)
+    //
+    // If the two transactions are genuinely serialized (lock held from
+    // before the read until COMMIT), the final `applications.status` MUST
+    // be "submitted" no matter which request's transaction wins the race:
+    //   - A-then-B: A commits "submitted"; B reads "submitted", target
+    //     "ready_to_review" is backward -> B is rejected (400), state stays
+    //     "submitted".
+    //   - B-then-A: B commits "ready_to_review" (no-op vs. its own stale
+    //     read); A then reads "ready_to_review" -> "submitted" is forward ->
+    //     A commits, final state "submitted".
+    // Without a real lock serializing the whole read+write, B could read the
+    // pre-A state, then have its own UPDATE land AFTER A's commit, clobbering
+    // "submitted" back down to "ready_to_review" — the exact status
+    // regression 06-REVIEW.md CR-01 flagged. This assertion fails if that
+    // regression happens, regardless of which request the race scheduler
+    // happens to run first.
+    await db
+      .update(applications)
+      .set({ status: "ready_to_review" })
+      .where(eq(applications.opportunityExternalId, externalId));
+
+    const [raceA, raceB] = await Promise.all([
+      postApplySession(baseUrl, externalId, { status: "submitted", sentFields: [] }, validAuth),
+      postApplySession(
+        baseUrl,
+        externalId,
+        { status: "ready_to_review", sentFields: [] },
+        validAuth,
+      ),
+    ]);
+
+    assert.equal(
+      raceA.status,
+      200,
+      `expected the forward ready_to_review->submitted request to always succeed regardless of race ordering, got ${raceA.status}`,
+    );
+    assert.ok(
+      raceB.status === 200 || raceB.status === 400,
+      `expected the concurrent same-target request to either win the race (200, no-op against its own stale read) or lose it (400, rejected as backward against the committed state), got ${raceB.status}`,
+    );
+
+    const afterRaceApp = await getApplicationRow(externalId);
+    assert.equal(
+      afterRaceApp?.status,
+      "submitted",
+      'CR-01 REGRESSION: applications.status must never end up at "ready_to_review" after this concurrent forward+same-target race — that would mean the advisory lock failed to serialize the two transactions end-to-end',
+    );
+    console.log(
+      `PASS: genuine concurrent race (Promise.all, no sequential await) never regresses applications.status — raceA=${raceA.status}, raceB=${raceB.status}, final status=submitted`,
+    );
   } finally {
     // Restore applications row to its pre-test state.
     if (originalApplication) {
