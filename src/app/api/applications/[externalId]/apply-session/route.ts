@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -123,9 +123,26 @@ export async function POST(
 
   try {
     await db.transaction(async (tx) => {
-      // Read the CURRENT status INSIDE the transaction (not before it
-      // opened) to avoid a race between the check and the write
-      // (06-CONTEXT.md key_links).
+      // 06-REVIEW.md CR-01 (BLOCKER): reading inside a transaction under
+      // Postgres's default READ COMMITTED isolation gives NO guarantee
+      // against a concurrent transaction reading the same pre-write state —
+      // two overlapping calls to this route for the same externalId could
+      // both read a stale `currentStatus`, both pass the forward-only
+      // check, and both commit (silently regressing applications.status).
+      // The profile-collision check has the same read-then-write shape but
+      // against the single shared profile_fields table, so it can race
+      // across DIFFERENT externalIds too. Acquire both advisory locks FIRST,
+      // before any read: one keyed by this externalId (serializes the
+      // status-transition check/write), one on a fixed constant (serializes
+      // ALL apply-session transactions that touch profile_fields, since
+      // that table has no per-externalId partitioning to lock by). Both are
+      // transaction-scoped (`_xact_`) — released automatically at
+      // COMMIT/ROLLBACK, no manual unlock needed.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${parsedExternalId.data}))`);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(0)`);
+
+      // Read the CURRENT status INSIDE the transaction, now serialized by
+      // the advisory lock above (06-CONTEXT.md key_links).
       const [currentRow] = await tx
         .select({ status: applications.status })
         .from(applications)
