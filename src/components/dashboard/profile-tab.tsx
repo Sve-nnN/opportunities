@@ -93,27 +93,57 @@ export function ProfileTab({ fields }: { fields: ProfileField[] }) {
 }
 
 /**
+ * 05-REVIEW.md WR-02: `key` gets `normalizeToKey` specifically so that
+ * visually-different-but-semantically-same labels don't fragment the data
+ * model — `category` had no equivalent treatment, so e.g. "contacto" (bulk
+ * seed) and "Contacto" (typed by hand later) became two separate,
+ * identically-labeled group headings. Normalize case/whitespace ONLY for
+ * grouping/dedup comparisons; the original `category` string (first
+ * occurrence's casing) is still what's displayed.
+ */
+function normalizeCategoryKey(category: string): string {
+  return category.trim().toLowerCase();
+}
+
+/**
  * Groups the already-`createdAt`-ordered `fields` array by `category` in
  * first-appearance order (single pass, per UI-SPEC "render groups in the
- * order categories were first created").
+ * order categories were first created"). Grouping itself is
+ * case/whitespace-insensitive (WR-02); the displayed heading keeps the
+ * exact casing of whichever field in the group was created first.
  */
 function groupByCategory(
   fields: ProfileField[],
 ): [string, ProfileField[]][] {
-  const map = new Map<string, ProfileField[]>();
+  const map = new Map<
+    string,
+    { displayCategory: string; rows: ProfileField[] }
+  >();
   for (const field of fields) {
-    const existing = map.get(field.category);
+    const normalized = normalizeCategoryKey(field.category);
+    const existing = map.get(normalized);
     if (existing) {
-      existing.push(field);
+      existing.rows.push(field);
     } else {
-      map.set(field.category, [field]);
+      map.set(normalized, { displayCategory: field.category, rows: [field] });
     }
   }
-  return Array.from(map.entries());
+  return Array.from(map.values()).map((group) => [
+    group.displayCategory,
+    group.rows,
+  ]);
 }
 
+/** Case/whitespace-deduplicated (WR-02), keeping first-seen display casing. */
 function distinctCategories(fields: ProfileField[]): string[] {
-  return Array.from(new Set(fields.map((field) => field.category)));
+  const seen = new Map<string, string>();
+  for (const field of fields) {
+    const normalized = normalizeCategoryKey(field.category);
+    if (!seen.has(normalized)) {
+      seen.set(normalized, field.category);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 function CategoryGroup({
