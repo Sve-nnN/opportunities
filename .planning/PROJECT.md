@@ -8,6 +8,17 @@ Un dashboard web personal para Juan (estudiante de Ingeniería de Software, cicl
 
 Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
 
+## Current Milestone: v1.1 Auto-apply asistido con IA
+
+**Goal:** Cada oportunidad de Internships/Underclassmen tiene un botón "Send to AI" que genera un prompt (link + snapshot del perfil + instrucción de usar Scrapling + instrucción de pedir el OK de Juan antes de enviar) para pegar en una sesión de Claude Code, que llena el formulario, pregunta lo que falte, y al terminar actualiza el panel (estado, notas, perfil) vía un endpoint API protegido con secret.
+
+**Target features:**
+- Botón "Send to AI" por oportunidad (Internships/Underclassmen) que genera/copia el prompt
+- Perfil flexible key-value que crece con el uso (sin carga inicial obligatoria salvo datos básicos)
+- Historial de qué se le mandó a cada sitio, no solo el perfil global
+- Etapas intermedias nuevas en el tracking de postulaciones (sesión a medias / listo para enviar / enviado)
+- Endpoint API con bearer secret para que la sesión de Claude Code actualice el panel
+
 ## Requirements
 
 ### Validated
@@ -26,12 +37,16 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 
 ### Active
 
-(Ninguno pendiente de v1 — solo queda Phase 4: Deploy)
+- [ ] Botón "Send to AI" por oportunidad (Internships/Underclassmen) que genera/copia un prompt con link + perfil + instrucciones
+- [ ] Perfil de datos flexible (key-value), se completa incrementalmente con el uso
+- [ ] Historial de datos enviados por sitio/aplicación (no solo perfil global)
+- [ ] Etapas intermedias nuevas en el tracking de postulaciones para reflejar sesiones de auto-apply a medias
+- [ ] Endpoint API con bearer secret para que la sesión de Claude Code actualice estado/notas/perfil al terminar
 
 ### Out of Scope
 
 - Autenticación multi-usuario / cuentas de terceros — es una herramienta personal de un solo usuario, no un producto para otros
-- Aplicar automáticamente a internships (auto-apply) — fuera de alcance, riesgo alto y no pedido
+- Auto-submit sin revisión humana — el submit final en cada ATS lo confirma Juan siempre; ver v1.1 "Auto-apply asistido con IA" para el alcance real (auto-fill + revisión, no auto-submit)
 - Alertas push/email/Telegram en v1 — se evalúa como v2 si el dashboard demuestra valor
 - Curaduría manual de nuevas fuentes más allá de las 3 dadas — se puede sumar investigación de fuentes adicionales (GitHub Global Campus, otras listas awesome) como research, no como mantenimiento continuo
 
@@ -65,6 +80,8 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 | Dirección visual: mundo tipo Linear/Kanban dev-tool (near-black + acento violeta), vía skill Impeccable | Pedido explícito de Juan de usar Impeccable para toda la UI; direction contract en `.impeccable/surfaces/`, documentado en `DESIGN.md` tras el build real | ✓ Good |
 | Tabla de Internships (16,109 filas) sin virtualización | El tab-switcher tardaba 6-13s en volverse alcanzable por teclado en producción | ✓ Good — resuelto en Phase 3 con TanStack Virtual: 6-13s → ~1.3-1.9s, DOM de 16,109 filas → 27 |
 | Notas y estado referencian `applications.opportunity_external_id` (nunca el id serial de cache) | Sobrevive resyncs de Phase 1 sin perder el tracking del usuario (research/ARCHITECTURE.md Anti-Pattern 2) | ✓ Good |
+| v1.1: se revierte la exclusión de v1.0 sobre auto-apply, pero acotado a auto-fill + revisión humana (no auto-submit) | Juan lo pidió explícitamente; el submit automático sin revisión seguía siendo demasiado riesgoso (ToS de cada ATS, errores irreversibles por oferta) | — Pending |
+| Auto-apply corre como sesión de Claude Code externa (no motor de browser-automation dentro de la app) | Evita construir/mantener un engine de automatización frágil contra decenas de ATS distintos; reusa el Claude Code que Juan ya usa a diario, con Scrapling como herramienta de esa sesión | — Pending |
 
 ## Evolution
 
@@ -84,4 +101,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 after Phase 3*
+*Last updated: 2026-09-08 after starting v1.1 milestone*
