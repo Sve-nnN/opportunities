@@ -30,7 +30,7 @@ Juan necesita poder mandar cualquier oportunidad (Internships/Underclassmen) a u
 
   1. Juan puede ver y editar su perfil de datos como pares clave-valor flexibles, sin necesidad de un schema rígido
   2. El perfil arranca con una carga inicial de datos básicos (nombre, email, CV, links)
-  3. El dropdown de estado de una postulación muestra y permite seleccionar las nuevas etapas intermedias (`auto_fill_in_progress` / `ready_to_review` / `submitted`)
+  3. El dropdown de estado de una postulación muestra las nuevas etapas intermedias (`auto_fill_in_progress` / `ready_to_review` / `submitted`) — de solo lectura ahí, seleccionables únicamente vía el callback de Phase 6
   4. `applications.status` acepta esas etapas intermedias además de las 6 ya existentes
 
 **Plans**: 2 plans
