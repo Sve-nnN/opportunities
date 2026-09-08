@@ -94,9 +94,11 @@ Plans:
   2. La app es accesible en un subdominio de `juan-tech.com` con HTTPS funcionando (Cloudflare Full-strict + Let's Encrypt)
   3. Los secretos (PAT de GitHub, credenciales de DB) están configurados como variables de entorno en Dokploy, con el PAT de solo lectura y con expiración
 
-**Plans**: 0/4 plans
+**Plans**: 5/5 plans executed
 
 Plans:
+
+- [x] 04-05-PLAN.md
 
 - [x] 04-01-PLAN.md — Verify Docker build (static assets), push repo to GitHub, create Dokploy project/application wired to it (buildType=dockerfile)
 - [x] 04-02-PLAN.md — Apply production migrations via SSH tunnel, set DATABASE_URL/GITHUB_PAT/SYNC_TRIGGER_SECRET as Dokploy env vars
@@ -113,5 +115,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Ingestion Foundation | 2/2 | Complete    | 2026-09-07 |
 | 2. Discovery UI | 3/3 | Complete    | 2026-09-07 |
 | 3. Application Tracking | 2/2 | Complete    | 2026-09-07 |
-| 4. Deploy | 4/4 | Complete    | 2026-09-08 |
+| 4. Deploy | 5/5 | In Progress|  |
 </content>

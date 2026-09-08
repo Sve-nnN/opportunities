@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 current_phase: 4
 status: completed
-stopped_at: Phase 4 complete — all phases complete
-last_updated: "2026-09-08T15:16:48.888Z"
+stopped_at: Completed 04-05-PLAN.md (pagination hotfix, checkpoint auto-verified)
+last_updated: "2026-09-08T16:03:23.769Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 4 complete
-state_head: 2f3a28ca0d5e8071a7fc263dd2c4b92c9f7fedda
+state_head: 4b9afb5b8780343b2bb6cea1fc058b261e9d1870
 progress:
   total_phases: 4
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  completed_phases: 3
+  total_plans: 12
+  completed_plans: 12
+  percent: 75
 ---
 
 # Project State
@@ -31,7 +31,7 @@ Plan: Not started
 Status: All phases complete
 Last activity: 2026-09-08 — Phase 4 complete
 
-Progress: [███████░░░] 75%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [███████░░░] 75%
 | Phase 02 P03 | ~2h | 3 tasks | 16 files |
 | Phase 03 P01 | ~1h | 3 tasks | 11 files |
 | Phase 03 P02 | ~2h | 3 tasks | 12 files |
+| Phase 04 P05 | ~25min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,7 @@ Recent decisions affecting current work:
 - [Phase 3 P2]: Row virtualization for the 16,109+-row table replaced the plan's literal tbody-height+translateY technique with leading/trailing spacer <tr> rows after live measurement proved explicit height on a table-row-group with far fewer real rows causes CSS to redistribute that height onto the rows (measured ~2.4M px per row)
 - [Phase 3 P2]: Roving tabindex requires tabIndex=-1 on a row's interactive descendants too (StatusDropdown/NotesPopover), not just the <tr> — otherwise Tab still steps through every mounted row's controls regardless of which row is "active"
 - [Phase 3 P2]: Fixed a pre-existing (Plan 1) StatusDropdown focus-loss-to-<body> bug tied to Server Action + revalidatePath timing (Radix restores focus immediately, the later Server Component refresh can still knock it away) — added a defensive re-focus poll, found via this plan's own new keyboard-walkthrough a11y check
+- [Phase 4]: [Phase 4 P05]: Made pagination a required (not optional) third param on listOpportunities/listBenefits so no call site can silently omit bounding a query; added isActive field to BenefitFilters mirroring opportunityFilters.status for the active-tab badge count
 
 ### Pending Todos
 
@@ -121,7 +123,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T04:06:44.554Z
-Stopped at: Phase 4 complete — all phases complete
+Last session: 2026-09-08T16:03:18.842Z
+Stopped at: Completed 04-05-PLAN.md (pagination hotfix, checkpoint auto-verified)
 Resume file: None
 </content>
