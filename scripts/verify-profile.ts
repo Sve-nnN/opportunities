@@ -206,6 +206,67 @@ async function main() {
     console.log("Cleanup: edit-test row removed, live data left untouched.");
   }
 
+  // Behavior 4 (Task 3, data-level): upsert 3 of the 6 PROFILE-02 seed
+  // fields (simulating Juan leaving the other 3 blank in "Cargar datos
+  // básicos") and confirm getAllProfileFields() returns exactly those 3,
+  // groupable under "contacto"/"links". The actual browser-level "empty
+  // inputs are never sent" filter is confirmed by the plan's human-check,
+  // not here — this only confirms the data layer groups correctly once
+  // rows exist.
+  const seedKeys = [
+    "zzzz_verify_nombre_completo_zzzz",
+    "zzzz_verify_link_cv_resume_zzzz",
+    "zzzz_verify_linkedin_zzzz",
+  ];
+  try {
+    await upsertProfileField({
+      key: seedKeys[0],
+      label: "Zzzz Nombre completo Zzzz",
+      value: "Juan Pérez",
+      category: "contacto",
+      source: "manual",
+    });
+    await upsertProfileField({
+      key: seedKeys[1],
+      label: "Zzzz Link CV/resume Zzzz",
+      value: "https://example.com/cv.pdf",
+      category: "links",
+      source: "manual",
+    });
+    await upsertProfileField({
+      key: seedKeys[2],
+      label: "Zzzz LinkedIn Zzzz",
+      value: "https://linkedin.com/in/juan",
+      category: "links",
+      source: "manual",
+    });
+
+    const allFields = await getAllProfileFields();
+    const seedRows = allFields.filter((field) => seedKeys.includes(field.key));
+    assert.equal(
+      seedRows.length,
+      3,
+      `expected exactly 3 seed rows (the ones with a non-empty value), found ${seedRows.length}`,
+    );
+    const contactoRows = seedRows.filter((row) => row.category === "contacto");
+    const linksRows = seedRows.filter((row) => row.category === "links");
+    assert.equal(contactoRows.length, 1, "expected 1 seed row under 'contacto'");
+    assert.equal(linksRows.length, 2, "expected 2 seed rows under 'links'");
+    console.log(
+      "PASS: 3 of 6 seed fields upsert as exactly 3 rows, grouped 1 'contacto' + 2 'links'",
+    );
+  } finally {
+    for (const key of seedKeys) {
+      await db.delete(profileFields).where(eq(profileFields.key, key));
+    }
+    const leftover = await db
+      .select()
+      .from(profileFields)
+      .where(eq(profileFields.key, seedKeys[0]));
+    assert.equal(leftover.length, 0, "expected seed test rows to be deleted");
+    console.log("Cleanup: seed test rows removed, live data left untouched.");
+  }
+
   console.log("All profile behaviors verified against live Postgres.");
 }
 

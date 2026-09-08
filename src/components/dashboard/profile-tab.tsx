@@ -23,22 +23,33 @@ type SaveState = "idle" | "saving" | "saved";
 
 /**
  * "Perfil" tab (PROFILE-01/02, 05-CONTEXT.md): Juan's flexible key-value
- * profile grouped by category, editable inline (Task 2 adds the per-row
- * pencil popover), with an ad hoc "+ Agregar campo" flow and a bulk
- * "Cargar datos básicos" empty-state CTA (Task 3).
+ * profile grouped by category, editable inline (per-row pencil popover),
+ * with an ad hoc "+ Agregar campo" flow and a bulk "Cargar datos básicos"
+ * empty-state CTA.
  */
 export function ProfileTab({ fields }: { fields: ProfileField[] }) {
   const groups = groupByCategory(fields);
   const categories = distinctCategories(fields);
 
   if (fields.length === 0) {
-    // Task 3 fills in the real empty-state heading/body/CTAs (UI-SPEC
-    // "Empty state (zero fields)"). For now this renders an empty
-    // container so page.tsx has something to wire the 4th tab against
-    // (05-01-PLAN.md Task 1 done criteria).
+    // UI-SPEC "Empty state (zero fields)": same py-10 text-center
+    // text-muted-foreground convention already shipped in
+    // virtualized-opportunities-table.tsx, extended with a heading + both
+    // CTAs — Juan is never forced through the 6-field bulk form if he only
+    // wants one ad hoc field.
     return (
       <div className="min-h-0 flex-1 overflow-auto p-4">
-        <AddFieldPopover categories={categories} />
+        <div className="py-10 text-center">
+          <p className="font-medium text-foreground">Tu perfil está vacío</p>
+          <p className="mt-1 text-muted-foreground">
+            Carga tus datos básicos para que las postulaciones asistidas por
+            IA puedan usarlos, o agrega un campo a mano.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <BulkLoadPopover />
+            <AddFieldPopover categories={categories} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -307,6 +318,119 @@ function EditFieldPopover({ field }: { field: ProfileField }) {
           onChange={(event) => handleChange(event.target.value)}
           maxLength={2000}
         />
+        <p aria-live="polite" className="text-xs text-muted-foreground">
+          {saveState === "saving" || isPending
+            ? "Guardando…"
+            : saveState === "saved"
+              ? "Guardado"
+              : " "}
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * The 6 PROFILE-02 seed fields, exact list per 05-CONTEXT.md "Modelo de
+ * datos del perfil" — pre-seeded label+category pairs for the "Cargar datos
+ * básicos" bulk-load popover. `value` starts empty; Juan fills in whichever
+ * subset he wants.
+ */
+const BULK_LOAD_SEED_FIELDS: { label: string; category: string }[] = [
+  { label: "Nombre completo", category: "contacto" },
+  { label: "Email", category: "contacto" },
+  { label: "Teléfono", category: "contacto" },
+  { label: "Link CV/resume", category: "links" },
+  { label: "LinkedIn", category: "links" },
+  { label: "GitHub", category: "links" },
+];
+
+/**
+ * "Cargar datos básicos" (UI-SPEC "Interaction Pattern" + empty-state
+ * primary CTA): 6 pre-seeded label/category pairs, any subset may be left
+ * blank. Unlike `AddFieldPopover`, this is a one-time bulk action — it
+ * closes on a successful save instead of staying open for repeat adds.
+ */
+function BulkLoadPopover() {
+  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState<string[]>(
+    () => BULK_LOAD_SEED_FIELDS.map(() => ""),
+  );
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [isPending, startTransition] = useTransition();
+
+  function handleValueChange(index: number, next: string) {
+    setValues((current) => {
+      const updated = [...current];
+      updated[index] = next;
+      return updated;
+    });
+  }
+
+  function handleSave() {
+    // Client-side filter: only non-empty (post-trim) fields are sent. The
+    // Server Action independently re-validates/drops empty entries too
+    // (defense in depth per saveProfileFields' own docs) — this is not the
+    // only guardrail, just the one that skips a pointless network write.
+    const entries = BULK_LOAD_SEED_FIELDS.map((seed, index) => ({
+      label: seed.label,
+      category: seed.category,
+      value: values[index],
+    })).filter((entry) => entry.value.trim().length > 0);
+
+    if (entries.length === 0) {
+      return;
+    }
+
+    setSaveState("saving");
+    startTransition(async () => {
+      const result = await saveProfileFields(entries);
+      if (result.ok) {
+        setSaveState("saved");
+        setValues(BULK_LOAD_SEED_FIELDS.map(() => ""));
+        // Closes on success (UI-SPEC: "this is a one-time bulk action, not
+        // a repeat-and-add flow") — unlike AddFieldPopover.
+        setOpen(false);
+      } else {
+        console.error("[BulkLoadPopover] failed to save fields:", result.error);
+        setSaveState("idle");
+      }
+    });
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="default">
+          Cargar datos básicos
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-96">
+        {BULK_LOAD_SEED_FIELDS.map((seed, index) => (
+          <div key={seed.label}>
+            <label
+              htmlFor={`bulk-load-${index}`}
+              className="text-xs font-medium text-muted-foreground"
+            >
+              {seed.label}
+            </label>
+            <Input
+              id={`bulk-load-${index}`}
+              value={values[index]}
+              onChange={(event) => handleValueChange(index, event.target.value)}
+            />
+          </div>
+        ))}
+
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={
+            isPending || values.every((value) => value.trim().length === 0)
+          }
+        >
+          Guardar
+        </Button>
         <p aria-live="polite" className="text-xs text-muted-foreground">
           {saveState === "saving" || isPending
             ? "Guardando…"
