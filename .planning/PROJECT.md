@@ -20,11 +20,13 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 - ✓ Ver catálogo de beneficios .edu desde student-benefits — Phase 2
 - ✓ Filtrar/buscar oportunidades y beneficios por categoría, tipo, estado (abierto/cerrado) — Phase 2
 
+- ✓ Marcar el estado de una postulación propia (por aplicar / aplicado / en proceso / rechazado / aceptado / guardado) con notas — Phase 3
+- ✓ Los datos de aplicaciones persisten y se sincronizan entre dispositivos (no localStorage, verificado cross-device) — Phase 3
+- ✓ Datos de oportunidades/beneficios se refrescan desde las fuentes en vivo (no copia estática mantenida a mano) — Phase 1
+
 ### Active
 
-- [ ] Marcar el estado de una postulación propia (por aplicar / aplicado / en proceso / rechazado / aceptado) con notas
-- [ ] Los datos de aplicaciones persisten y se sincronizan entre dispositivos (no solo localStorage)
-- [ ] Datos de oportunidades/beneficios se refrescan desde las fuentes en vivo (no copia estática mantenida a mano)
+(Ninguno pendiente de v1 — solo queda Phase 4: Deploy)
 
 ### Out of Scope
 
@@ -61,7 +63,8 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 | `external_id` de `opportunities` incluye `url` en el hash (no solo company+title+locations) | El plan original colisionaba en 1867/16109 filas reales de Summer2027-Internships; con `url` quedó 16109/16109 únicos | ✓ Good |
 | GITHUB_PAT no bloqueó la ejecución de Fase 1 | Corrimos el sync de prueba sin autenticar (bajo volumen, solo dev); production/cron real necesita el PAT seteado antes de confiar en el sync cada 2h | ⚠️ Revisit antes de Fase 4 |
 | Dirección visual: mundo tipo Linear/Kanban dev-tool (near-black + acento violeta), vía skill Impeccable | Pedido explícito de Juan de usar Impeccable para toda la UI; direction contract en `.impeccable/surfaces/`, documentado en `DESIGN.md` tras el build real | ✓ Good |
-| Tabla de Internships (16,109 filas) sin virtualización | El tab-switcher tarda 6-13s en volverse alcanzable por teclado en producción por renderizar todas las filas dentro del boundary de Tabs (cliente) — no es un trap de teclado, se resuelve solo | ⚠️ Revisit antes de Fase 3 (que agrega controles interactivos por fila a esta misma tabla) — considerar TanStack Virtual |
+| Tabla de Internships (16,109 filas) sin virtualización | El tab-switcher tardaba 6-13s en volverse alcanzable por teclado en producción | ✓ Good — resuelto en Phase 3 con TanStack Virtual: 6-13s → ~1.3-1.9s, DOM de 16,109 filas → 27 |
+| Notas y estado referencian `applications.opportunity_external_id` (nunca el id serial de cache) | Sobrevive resyncs de Phase 1 sin perder el tracking del usuario (research/ARCHITECTURE.md Anti-Pattern 2) | ✓ Good |
 
 ## Evolution
 
@@ -81,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 after Phase 2*
+*Last updated: 2026-09-07 after Phase 3*

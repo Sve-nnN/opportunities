@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-current_phase: 3
-current_phase_name: Application Tracking
-status: complete
-stopped_at: Completed 03-02-PLAN.md (notes autosave + row virtualization + a11y verification) — Phase 3 complete
-last_updated: "2026-09-08T04:06:44.653Z"
+current_phase: 4
+current_phase_name: Deploy
+status: planning
+stopped_at: Phase 3 complete, ready to plan Phase 4
+last_updated: "2026-09-08T04:15:49.889Z"
 last_activity: 2026-09-07
-last_activity_desc: Phase 3 Plan 2 complete — notes autosave, TanStack Virtual row virtualization, roving tabindex, a11y verification (TRACK-02, TRACK-03 complete)
-state_head: 88a261e7940fcefc185835d38fef82d8f2048cda
+last_activity_desc: Phase 3 complete, transitioned to Phase 4
+state_head: deac700a02e016912cca1f280c01a487d5301bcc
 progress:
   total_phases: 4
   completed_phases: 3
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 
 ## Current Position
 
-Phase: 3 — Application Tracking — COMPLETE
-Plan: 2/2 complete
-Status: Complete
-Last activity: 2026-09-07 — Plan 2 (notes autosave + row virtualization + a11y verification) complete
+Phase: 4 — Deploy
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-07 — Phase 3 complete, transitioned to Phase 4
 
 Progress: [███████░░░] 75%
 
@@ -109,6 +109,7 @@ None yet.
 - Verificar licencia/atribución de las 3 fuentes de GitHub durante Phase 1 (riesgo MEDIUM, no bloqueante)
 - ✅ RESUELTO [Phase 3 P2]: Tabla de Internships (16,109 filas) sin virtualización — resuelto con `@tanstack/react-virtual` (VirtualizedOpportunitiesTable). Medido en vivo: tab-switcher alcanzable en tiempo constante (<2s, dominado por el round-trip de Postgres, no por hidratación) en vez de 6-13s; DOM montado 13-27 filas en vez de 16,109+; un click en StatusDropdown que antes de virtualizar nunca resolvía (30-240s+ timeout, Radix Portal hideOthers) ahora resuelve en 400-1000ms
 - ⚠️ [Phase 2] Impeccable finish-reviewer/documenter corrieron en modo degradado (inline, sin subagentes) — recomendable una re-revisión independiente cuando el harness lo soporte
+- ⚠️ [Phase 3] El Dockerfile de Phase 1 debe copiar explícitamente `.next/static/` y `public/` al output standalone — confirmado por el verifier de Phase 3 que el standalone build no los incluye por defecto (comportamiento documentado de Next.js, no un bug). Verificar en Phase 4 antes de dar por bueno el build de Dokploy.
 
 ## Deferred Items
 
@@ -121,6 +122,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-09-08T04:06:44.554Z
-Stopped at: Completed 03-02-PLAN.md (notes autosave + row virtualization + a11y verification) — Phase 3 (Application Tracking) fully complete, ready for Phase 4 (Deploy)
+Stopped at: Phase 3 complete, ready to plan Phase 4
 Resume file: None
 </content>
