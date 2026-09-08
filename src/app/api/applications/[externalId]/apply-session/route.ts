@@ -228,8 +228,17 @@ export async function POST(
           // overwrites and only warns), a collision here aborts the WHOLE
           // callback write — profile, status, and history together, via
           // this throw rolling back the entire transaction.
+          //
+          // IN-01 (06-REVIEW.md): don't echo the existing label back to the
+          // caller — the calling session didn't necessarily submit that
+          // value itself, and echoing it lets a caller enumerate Juan's
+          // existing profile field labels by probing with guessed labels.
+          // Log the specific pair server-side for debuggability instead.
+          console.error(
+            `[api/applications/apply-session] profileUpdates collision: new label "${entry.label}" collides with existing label "${existingLabel}" (both normalize to key "${key}")`,
+          );
           throw new CallbackValidationError(
-            `profileUpdates label "${entry.label}" collides with existing label "${existingLabel}" (both normalize to key "${key}")`,
+            `profileUpdates label "${entry.label}" collides with an existing profile field`,
           );
         }
 
