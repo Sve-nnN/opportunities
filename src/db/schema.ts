@@ -73,7 +73,10 @@ export const benefits = pgTable("benefits", {
  */
 export const applications = pgTable("applications", {
   id: serial("id").primaryKey(),
-  opportunityExternalId: text("opportunity_external_id").notNull(),
+  // UNIQUE so `onConflictDoUpdate({ target: applications.opportunityExternalId })`
+  // has a real constraint to upsert against — added in this phase's migration
+  // (0001_*, see drizzle/), column already existed schema-only since Phase 1.
+  opportunityExternalId: text("opportunity_external_id").notNull().unique(),
   status: text("status").notNull().default("not_applied"),
   notes: text("notes"),
   isSaved: boolean("is_saved").notNull().default(false),

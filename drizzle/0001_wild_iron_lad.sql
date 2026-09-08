@@ -1,0 +1,1 @@
+ALTER TABLE "applications" ADD CONSTRAINT "applications_opportunity_external_id_unique" UNIQUE("opportunity_external_id");

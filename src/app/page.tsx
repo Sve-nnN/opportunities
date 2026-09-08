@@ -5,6 +5,7 @@ import { FilterChips } from "@/components/dashboard/filter-chips";
 import { FreshnessBadge } from "@/components/dashboard/freshness-badge";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { StaleSyncBanner } from "@/components/dashboard/stale-sync-banner";
+import { StatusDropdown } from "@/components/dashboard/status-dropdown";
 import { StatusPill } from "@/components/dashboard/status-pill";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,6 +18,10 @@ import {
 } from "@/components/ui/table";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/db/client";
+import {
+  type ApplicationRecord,
+  getApplicationsByExternalIds,
+} from "@/db/queries/applications";
 import { listBenefits } from "@/db/queries/benefits";
 import {
   getDistinctCategories,
@@ -110,6 +115,18 @@ export default async function Home({
       getLatestSyncPerSource(db),
     ]);
 
+  // A single `applications` lookup covering both Internships and
+  // Underclassmen (both are `opportunities`-table sources, same tracking
+  // table) — avoids an N+1 per-row query. This can only run once
+  // internships/underclassmen have resolved above, since it needs their
+  // `externalId`s; still a single extra round trip, not one per row.
+  // Benefits are excluded: TRACK-01/04 only cover opportunities, "you don't
+  // apply to a benefit."
+  const applicationsByExternalId = await getApplicationsByExternalIds([
+    ...internships.map((row) => row.externalId),
+    ...underclassmen.map((row) => row.externalId),
+  ]);
+
   const activeTabSyncRow = syncBySource[TAB_SYNC_SOURCE[activeTab]];
 
   // Filtered result count for the active tab only — announced via
@@ -188,7 +205,10 @@ export default async function Home({
             latestRow={syncBySource[TAB_SYNC_SOURCE.internships]}
           />
           <div className="min-h-0 flex-1 overflow-auto">
-            <OpportunitiesTable rows={internships} />
+            <OpportunitiesTable
+              rows={internships}
+              applicationsByExternalId={applicationsByExternalId}
+            />
           </div>
         </TabsContent>
 
@@ -207,7 +227,11 @@ export default async function Home({
             latestRow={syncBySource[TAB_SYNC_SOURCE.underclassmen]}
           />
           <div className="min-h-0 flex-1 overflow-auto">
-            <OpportunitiesTable rows={underclassmen} deemphasized />
+            <OpportunitiesTable
+              rows={underclassmen}
+              applicationsByExternalId={applicationsByExternalId}
+              deemphasized
+            />
           </div>
         </TabsContent>
 
@@ -252,9 +276,11 @@ type OpportunityRow = Awaited<ReturnType<typeof listOpportunities>>[number];
  */
 function OpportunitiesTable({
   rows,
+  applicationsByExternalId,
   deemphasized = false,
 }: {
   rows: OpportunityRow[];
+  applicationsByExternalId: Map<string, ApplicationRecord>;
   deemphasized?: boolean;
 }) {
   return (
@@ -273,6 +299,9 @@ function OpportunitiesTable({
           <TableHead scope="col" className={stickyHeadClass}>
             Status
           </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Postulación
+          </TableHead>
           <TableHead scope="col" className={`${stickyHeadClass} text-right`}>
             Link
           </TableHead>
@@ -282,7 +311,7 @@ function OpportunitiesTable({
         {rows.length === 0 ? (
           <TableRow className="hover:bg-transparent">
             <TableCell
-              colSpan={5}
+              colSpan={6}
               className="py-10 text-center text-muted-foreground"
             >
               No se encontraron resultados con estos filtros.
@@ -318,6 +347,22 @@ function OpportunitiesTable({
               </TableCell>
               <TableCell>
                 <StatusPill isActive={row.isActive} />
+              </TableCell>
+              <TableCell>
+                {/*
+                  A row missing from `applicationsByExternalId` was never
+                  tracked — defaults to "not_applied" ("por aplicar"), never
+                  null/undefined (03-01-PLAN.md must_haves). Always keyed by
+                  `externalId`, never the `opportunities` cache row's serial
+                  `id` (research/ARCHITECTURE.md Anti-Pattern 2).
+                */}
+                <StatusDropdown
+                  opportunityExternalId={row.externalId}
+                  status={
+                    applicationsByExternalId.get(row.externalId)?.status ??
+                    "not_applied"
+                  }
+                />
               </TableCell>
               <TableCell className="text-right">
                 {row.url ? (
