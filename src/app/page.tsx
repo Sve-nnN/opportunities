@@ -300,11 +300,21 @@ function OpportunitiesTable({
               >
                 {row.company ?? "—"}
               </TableCell>
-              <TableCell className="whitespace-normal">
-                {row.title ?? "—"}
+              {/*
+                `line-clamp-*` sets `display: -webkit-box`, which would
+                break a `<td>`'s required `display: table-cell` — wrapped in
+                an inner `<div>` instead so the cell itself stays a valid
+                table participant. Caps runaway multi-value fields (e.g. an
+                Underclassmen "category" data-quality outlier, or a
+                multi-city Location list) from ballooning one row's height
+                to 4-10x normal and breaking the dense-scan thesis — see
+                02-03-SUMMARY.md "Deviations" for the measured mobile repro.
+              */}
+              <TableCell className="max-w-xs whitespace-normal">
+                <div className="line-clamp-2">{row.title ?? "—"}</div>
               </TableCell>
-              <TableCell className="text-muted-foreground whitespace-normal">
-                {row.location ?? "—"}
+              <TableCell className="max-w-40 whitespace-normal text-muted-foreground">
+                <div className="line-clamp-2">{row.location ?? "—"}</div>
               </TableCell>
               <TableCell>
                 <StatusPill isActive={row.isActive} />
