@@ -37,6 +37,10 @@ export function FilterChips({
     } else {
       params.set(key, value);
     }
+    // A new/removed filter narrows or widens the result set — always land
+    // back on page 1, a stale page number from the old filter could point
+    // past the new end of the table (04-05-PLAN.md).
+    params.delete("page");
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
@@ -49,6 +53,7 @@ export function FilterChips({
     params.delete("category");
     params.delete("roleType");
     params.delete("status");
+    params.delete("page");
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,

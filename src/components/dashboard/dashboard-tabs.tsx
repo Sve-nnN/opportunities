@@ -37,6 +37,10 @@ export function DashboardTabs({
     params.delete("category");
     params.delete("roleType");
     params.delete("status");
+    // A stale page number from the previous tab (e.g. `page=40` on
+    // Internships) must never carry into the newly-active tab, which may
+    // have far fewer total pages (04-05-PLAN.md).
+    params.delete("page");
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,

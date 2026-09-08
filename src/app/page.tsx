@@ -1,6 +1,7 @@
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { FilterChips } from "@/components/dashboard/filter-chips";
 import { FreshnessBadge } from "@/components/dashboard/freshness-badge";
+import { PaginationControls } from "@/components/dashboard/pagination-controls";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { StaleSyncBanner } from "@/components/dashboard/stale-sync-banner";
 import { StatusPill } from "@/components/dashboard/status-pill";
@@ -17,9 +18,14 @@ import {
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/db/client";
 import { getApplicationsByExternalIds } from "@/db/queries/applications";
-import { countActiveBenefits, listBenefits } from "@/db/queries/benefits";
+import {
+  countActiveBenefits,
+  countBenefits,
+  listBenefits,
+} from "@/db/queries/benefits";
 import {
   countActiveOpportunities,
+  countOpportunities,
   getDistinctCategories,
   getDistinctRoleTypes,
   listOpportunities,
@@ -40,6 +46,24 @@ import {
 export const dynamic = "force-dynamic";
 
 const stickyHeadClass = "sticky top-0 z-10 bg-card";
+
+/**
+ * Every navigation now fetches at most this many rows for the active tab
+ * (04-05-PLAN.md) — real Postgres LIMIT/OFFSET pagination instead of
+ * fetching the full 16k+-row table and virtualizing it client-side.
+ */
+const PAGE_SIZE = 100;
+
+/**
+ * Parses the `page` search param, defaulting to 1 and clamping to `>= 1`.
+ * An invalid/negative/non-numeric value falls back to 1 and never becomes a
+ * negative `.offset()` (T-04-11) — this is the ONLY place `page` is turned
+ * into a number that reaches a query.
+ */
+function parsePage(raw: string | undefined): number {
+  const parsed = Number.parseInt(raw ?? "", 10);
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+}
 
 type TabValue = "internships" | "underclassmen" | "benefits";
 
@@ -91,39 +115,72 @@ export default async function Home({
   };
   const benefitFilters = { search: firstValue(params.q) };
 
-  // Only the ACTIVE tab's full row set is ever fetched — the other two
-  // tabs get a cheap SQL count instead. Every one of these three sources
-  // can run into the tens of thousands of real rows; serializing all three
-  // full datasets into a single RSC payload on EVERY navigation (including
-  // a plain tab switch, which only needs the newly-active tab's rows) was
-  // measured live producing a 17MB/14s flight response once production's
-  // real data volume replaced the shorter local/test fixtures — large and
-  // slow enough that the browser (and Cloudflare in front of it) aborted
-  // the in-flight fetch, which is what made tab switching "not work."
-  const [internships, underclassmen, benefits, internshipsCount, underclassmenCount, benefitsCount, categories, roleTypes, syncBySource] =
-    await Promise.all([
-      activeTab === "internships"
-        ? listOpportunities("summer2027-internships", opportunityFilters)
-        : Promise.resolve([]),
-      activeTab === "underclassmen"
-        ? listOpportunities("underclassmen-opportunities", opportunityFilters)
-        : Promise.resolve([]),
-      activeTab === "benefits" ? listBenefits(benefitFilters) : Promise.resolve([]),
-      activeTab === "internships"
-        ? Promise.resolve(-1)
-        : countActiveOpportunities("summer2027-internships"),
-      activeTab === "underclassmen"
-        ? Promise.resolve(-1)
-        : countActiveOpportunities("underclassmen-opportunities"),
-      activeTab === "benefits" ? Promise.resolve(-1) : countActiveBenefits(),
-      activeTab === "benefits"
-        ? Promise.resolve([])
-        : getDistinctCategories(TAB_SOURCE[activeTab]),
-      activeTab === "benefits"
-        ? Promise.resolve([])
-        : getDistinctRoleTypes(TAB_SOURCE[activeTab]),
-      getLatestSyncPerSource(db),
-    ]);
+  // Every navigation/tab-switch/page-change is bounded to PAGE_SIZE rows for
+  // the ACTIVE tab (04-05-PLAN.md) — the prior fix (commit 2c9c5b8) only
+  // made INACTIVE tabs cheap (COUNT only); the active tab still fetched
+  // every one of its rows on every navigation, which for Internships
+  // (16,190 rows) was measured live producing a 17MB/14s flight response
+  // once production's real data volume replaced the shorter local/test
+  // fixtures — large and slow enough that the browser (and Cloudflare in
+  // front of it) aborted the in-flight fetch. Real LIMIT/OFFSET pagination
+  // bounds every query, active tab included, to a small constant page size.
+  const page = parsePage(firstValue(params.page));
+  const pagination = { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE };
+
+  const [
+    internships,
+    underclassmen,
+    benefits,
+    internshipsCount,
+    underclassmenCount,
+    benefitsCount,
+    activeFilteredTotal,
+    activeBadgeCount,
+    categories,
+    roleTypes,
+    syncBySource,
+  ] = await Promise.all([
+    activeTab === "internships"
+      ? listOpportunities("summer2027-internships", opportunityFilters, pagination)
+      : Promise.resolve([]),
+    activeTab === "underclassmen"
+      ? listOpportunities("underclassmen-opportunities", opportunityFilters, pagination)
+      : Promise.resolve([]),
+    activeTab === "benefits"
+      ? listBenefits(benefitFilters, pagination)
+      : Promise.resolve([]),
+    activeTab === "internships"
+      ? Promise.resolve(-1)
+      : countActiveOpportunities("summer2027-internships"),
+    activeTab === "underclassmen"
+      ? Promise.resolve(-1)
+      : countActiveOpportunities("underclassmen-opportunities"),
+    activeTab === "benefits" ? Promise.resolve(-1) : countActiveBenefits(),
+    // Filtered total for the active tab only — feeds PaginationControls's
+    // "Mostrando X–Y de Z" and the aria-live result count below. Distinct
+    // from countActive{Opportunities,Benefits} above, which are always
+    // scoped to isActive: true regardless of the current filter set.
+    activeTab === "benefits"
+      ? countBenefits(benefitFilters)
+      : countOpportunities(TAB_SOURCE[activeTab], opportunityFilters),
+    // Active tab's own "actionable within the current filter" badge
+    // count — previously derived by filtering the full fetched array
+    // client-side (countActive()), which breaks once only one page is
+    // ever in memory. Same isActive-scoped definition, computed in SQL.
+    activeTab === "benefits"
+      ? countBenefits({ ...benefitFilters, isActive: true })
+      : countOpportunities(TAB_SOURCE[activeTab], {
+          ...opportunityFilters,
+          status: "open",
+        }),
+    activeTab === "benefits"
+      ? Promise.resolve([])
+      : getDistinctCategories(TAB_SOURCE[activeTab]),
+    activeTab === "benefits"
+      ? Promise.resolve([])
+      : getDistinctRoleTypes(TAB_SOURCE[activeTab]),
+    getLatestSyncPerSource(db),
+  ]);
 
   // A single `applications` lookup covering both Internships and
   // Underclassmen (both are `opportunities`-table sources, same tracking
@@ -142,13 +199,10 @@ export default async function Home({
   // Filtered result count for the active tab only — announced via
   // aria-live so a screen-reader user gets feedback when search/filter
   // narrows the table, since the table itself re-renders silently on a
-  // Server Component navigation with no page reload (A11Y.md).
-  const activeResultCount =
-    activeTab === "internships"
-      ? internships.length
-      : activeTab === "underclassmen"
-        ? underclassmen.length
-        : benefits.length;
+  // Server Component navigation with no page reload (A11Y.md). Now the
+  // filtered TOTAL (across all pages), not `.length` over the fetched
+  // array — `.length` broke once only one page's rows are ever in memory.
+  const activeResultCount = activeFilteredTotal;
 
   return (
     <div className="flex h-dvh flex-col">
@@ -167,22 +221,18 @@ export default async function Home({
             <TabsTrigger value="internships">
               Internships{" "}
               <Count
-                n={activeTab === "internships" ? countActive(internships) : internshipsCount}
+                n={activeTab === "internships" ? activeBadgeCount : internshipsCount}
               />
             </TabsTrigger>
             <TabsTrigger value="underclassmen">
               Underclassmen{" "}
               <Count
-                n={
-                  activeTab === "underclassmen"
-                    ? countActive(underclassmen)
-                    : underclassmenCount
-                }
+                n={activeTab === "underclassmen" ? activeBadgeCount : underclassmenCount}
               />
             </TabsTrigger>
             <TabsTrigger value="benefits">
               Beneficios .edu{" "}
-              <Count n={activeTab === "benefits" ? countActive(benefits) : benefitsCount} />
+              <Count n={activeTab === "benefits" ? activeBadgeCount : benefitsCount} />
             </TabsTrigger>
           </TabsList>
 
@@ -229,6 +279,7 @@ export default async function Home({
             rows={internships}
             applicationsByExternalId={applicationsByExternalId}
           />
+          <PaginationControls total={activeFilteredTotal} pageSize={PAGE_SIZE} />
         </TabsContent>
 
         {/*
@@ -250,6 +301,7 @@ export default async function Home({
             applicationsByExternalId={applicationsByExternalId}
             deemphasized
           />
+          <PaginationControls total={activeFilteredTotal} pageSize={PAGE_SIZE} />
         </TabsContent>
 
         <TabsContent
@@ -260,6 +312,7 @@ export default async function Home({
           <div className="min-h-0 flex-1 overflow-auto">
             <BenefitsTable rows={benefits} />
           </div>
+          <PaginationControls total={activeFilteredTotal} pageSize={PAGE_SIZE} />
         </TabsContent>
       </DashboardTabs>
     </div>
@@ -272,15 +325,6 @@ function Count({ n }: { n: number }) {
       ({n.toLocaleString("en-US")})
     </span>
   );
-}
-
-/**
- * Tab labels surface the *active* count (the headline "what can I act on
- * today" number), while the table body underneath still renders every row,
- * active and inactive alike (DISC-03) — the count is a summary, not a filter.
- */
-function countActive(rows: { isActive: boolean }[]): number {
-  return rows.filter((row) => row.isActive).length;
 }
 
 type BenefitRow = Awaited<ReturnType<typeof listBenefits>>[number];

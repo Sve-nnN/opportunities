@@ -71,6 +71,10 @@ export function SearchBar() {
       } else {
         params.delete("q");
       }
+      // A new search term invalidates whatever page the previous
+      // (unfiltered or differently-filtered) result set was on — always
+      // land back on page 1 (04-05-PLAN.md).
+      params.delete("page");
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
