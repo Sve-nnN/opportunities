@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -64,6 +65,22 @@ class CallbackValidationError extends Error {
 }
 
 /**
+ * WR-01 (06-REVIEW.md): a plain `!==` string comparison on a bearer secret
+ * short-circuits on the first differing byte, a textbook timing
+ * side-channel. This route's own threat model treats its caller as more
+ * adversarial than `/api/sync`'s (the interpretation of an LLM of an
+ * arbitrary webpage, not Juan typing a curl by hand), so it gets the
+ * constant-time comparison; `/api/sync/route.ts`'s `!==` is left as-is,
+ * out of scope for this phase.
+ */
+function safeCompareBearer(received: string | null, expected: string): boolean {
+  const expectedHeader = `Bearer ${expected}`;
+  const a = Buffer.from(received ?? "");
+  const b = Buffer.from(expectedHeader);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
  * Bearer-secret-gated callback an external Claude Code auto-apply session
  * calls to report its result (CALLBACK-01/02, PROFILE-03, AUDIT-01/02).
  * Every write (applications.status/notes + profile_fields upserts +
@@ -89,7 +106,7 @@ export async function POST(
   }
 
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${expectedSecret}`) {
+  if (!safeCompareBearer(authHeader, expectedSecret)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
