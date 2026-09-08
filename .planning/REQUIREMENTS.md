@@ -28,8 +28,8 @@
 ### Tracking (TRACK)
 
 - [x] **TRACK-01**: Juan puede marcar el estado de una postulación propia (por aplicar / aplicado / en proceso / rechazado / aceptado)
-- [ ] **TRACK-02**: Juan puede agregar notas libres a una postulación trackeada
-- [ ] **TRACK-03** (parcial): El estado y las notas de las postulaciones persisten en una base de datos y se ven igual desde cualquier dispositivo (no localStorage) — estado ✅ Plan 1, notas pendientes (Plan 2)
+- [x] **TRACK-02**: Juan puede agregar notas libres a una postulación trackeada
+- [x] **TRACK-03**: El estado y las notas de las postulaciones persisten en una base de datos y se ven igual desde cualquier dispositivo (no localStorage) — estado ✅ Plan 1, notas ✅ Plan 2
 - [x] **TRACK-04**: Juan puede marcar una oportunidad como "guardada/me interesa" sin que eso cuente como "aplicado"
 
 ### Deploy (DEPLOY)
@@ -87,8 +87,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-04 | Phase 2 | Complete |
 | BENE-01 | Phase 2 | Complete |
 | TRACK-01 | Phase 3 (Plan 1) | Complete |
-| TRACK-02 | Phase 3 (Plan 2) | Pending |
-| TRACK-03 | Phase 3 (Plan 1 status / Plan 2 notas) | Partial |
+| TRACK-02 | Phase 3 (Plan 2) | Complete |
+| TRACK-03 | Phase 3 (Plan 1 status / Plan 2 notas) | Complete |
 | TRACK-04 | Phase 3 (Plan 1) | Complete |
 | DEPLOY-01 | Phase 4 | Pending |
 | DEPLOY-02 | Phase 4 | Pending |

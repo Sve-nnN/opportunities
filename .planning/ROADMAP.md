@@ -13,7 +13,7 @@ Juan necesita una sola página que agregue en vivo internships, programas underc
 
 - [x] **Phase 1: Ingestion Foundation** - Parsers, normalización y cache en Postgres para las 3 fuentes, con sync programado y `external_id` estable (completed 2026-09-07)
 - [x] **Phase 2: Discovery UI** - Listado unificado, búsqueda/filtros y catálogo de beneficios sobre la capa de cache (completed 2026-09-07)
-- [ ] **Phase 3: Application Tracking** - Estado y notas de postulaciones persistidos en DB, sincronizados entre dispositivos
+- [x] **Phase 3: Application Tracking** - Estado y notas de postulaciones persistidos en DB, sincronizados entre dispositivos (completed 2026-09-07)
 - [ ] **Phase 4: Deploy** - App en producción vía Dokploy/Hetzner con subdominio de juan-tech.com y HTTPS funcionando
 
 ## Phase Details
@@ -73,12 +73,12 @@ Plans:
   3. El estado y las notas persisten en base de datos y se ven igual desde cualquier dispositivo
   4. Juan puede marcar una oportunidad como "guardada/me interesa" sin que cuente como "aplicado"
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 Plans:
 
 - [x] 03-01-PLAN.md — applications queries/Server Actions + status dropdown (icon+texto) wired into Internships/Underclassmen, incluye "guardado/me interesa"
-- [ ] 03-02-PLAN.md — notas con autosave debounced + refactor de virtualización (TanStack Virtual) de la tabla + pasada de accesibilidad
+- [x] 03-02-PLAN.md — notas con autosave debounced + refactor de virtualización (TanStack Virtual) de la tabla + pasada de accesibilidad
 
 **UI hint**: yes
 
@@ -105,6 +105,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Ingestion Foundation | 2/2 | Complete    | 2026-09-07 |
 | 2. Discovery UI | 3/3 | Complete    | 2026-09-07 |
-| 3. Application Tracking | 1/2 | In progress | - |
+| 3. Application Tracking | 2/2 | Complete    | 2026-09-07 |
 | 4. Deploy | 0/TBD | Not started | - |
 </content>

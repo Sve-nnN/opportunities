@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 current_phase: 3
 current_phase_name: Application Tracking
-status: in_progress
-stopped_at: Completed 03-01-PLAN.md (applications queries/Server Action/StatusDropdown)
-last_updated: "2026-09-08T04:00:00.000Z"
-last_activity: 2026-09-08
-last_activity_desc: Phase 3 Plan 1 complete — status tracking end-to-end (TRACK-01, TRACK-04, TRACK-03 partial)
-state_head: 243023f
+status: complete
+stopped_at: Completed 03-02-PLAN.md (notes autosave + row virtualization + a11y verification) — Phase 3 complete
+last_updated: "2026-09-08T04:06:44.653Z"
+last_activity: 2026-09-07
+last_activity_desc: Phase 3 Plan 2 complete — notes autosave, TanStack Virtual row virtualization, roving tabindex, a11y verification (TRACK-02, TRACK-03 complete)
+state_head: 88a261e7940fcefc185835d38fef82d8f2048cda
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 50
+  completed_plans: 7
+  percent: 75
 ---
 
 # Project State
@@ -23,22 +23,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-07)
 
 **Core value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
-**Current focus:** Phase 3 — Application Tracking
+**Current focus:** Phase 4 — Deploy (Phase 3 complete)
 
 ## Current Position
 
-Phase: 3 — Application Tracking
-Plan: 1/2 complete
-Status: In progress
-Last activity: 2026-09-08 — Plan 1 (applications queries/Server Action/StatusDropdown) complete
+Phase: 3 — Application Tracking — COMPLETE
+Plan: 2/2 complete
+Status: Complete
+Last activity: 2026-09-07 — Plan 2 (notes autosave + row virtualization + a11y verification) complete
 
-Progress: [█████░░░░░] 50%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 7
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -48,6 +48,7 @@ Progress: [█████░░░░░] 50%
 |-------|-------|-------|----------|
 | 1 | 2 | - | - |
 | 2 | 3 | - | - |
+| 3 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -65,6 +66,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P02 | ~20min | 3 tasks | 9 files |
 | Phase 02 P03 | ~2h | 3 tasks | 16 files |
 | Phase 03 P01 | ~1h | 3 tasks | 11 files |
+| Phase 03 P02 | ~2h | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -93,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 3 P1]: Moved ApplicationStatus/APPLICATION_STATUSES into src/lib/application-status.ts (no `pg` import) after the initial build broke — the client StatusDropdown component was pulling the Postgres driver into the browser bundle by importing types from db/queries/applications.ts, which imports db/client.ts (pg)
 - [Phase 3 P1]: Removed shadcn's default shadow-md from select.tsx's SelectContent, replaced with border-border — DESIGN.md's Flat-By-Default Rule forbids any box-shadow in this system
 - [Phase 3 P1]: "Guardado/me interesa" implemented purely as a 6th value of the same `status` text column (not the pre-existing unused `isSaved` boolean column) — confirmed via live Postgres that setting status='saved' never touches opportunities.is_active nor applications.is_saved
+- [Phase 3 P2]: Row virtualization for the 16,109+-row table replaced the plan's literal tbody-height+translateY technique with leading/trailing spacer <tr> rows after live measurement proved explicit height on a table-row-group with far fewer real rows causes CSS to redistribute that height onto the rows (measured ~2.4M px per row)
+- [Phase 3 P2]: Roving tabindex requires tabIndex=-1 on a row's interactive descendants too (StatusDropdown/NotesPopover), not just the <tr> — otherwise Tab still steps through every mounted row's controls regardless of which row is "active"
+- [Phase 3 P2]: Fixed a pre-existing (Plan 1) StatusDropdown focus-loss-to-<body> bug tied to Server Action + revalidatePath timing (Radix restores focus immediately, the later Server Component refresh can still knock it away) — added a defensive re-focus poll, found via this plan's own new keyboard-walkthrough a11y check
 
 ### Pending Todos
 
@@ -102,7 +107,7 @@ None yet.
 
 - Verificar en Phase 1 si `Summer2027-Internships` expone datos de deadline parseables; si no, se descarta esa feature del roadmap en vez de arrastrarla como deuda (research/SUMMARY.md)
 - Verificar licencia/atribución de las 3 fuentes de GitHub durante Phase 1 (riesgo MEDIUM, no bloqueante)
-- ⚠️ [Phase 2] Tabla de Internships (16,109 filas) sin virtualización — tab-switcher tarda 6-13s en volverse alcanzable por teclado en producción. No es trap (se resuelve solo), pero Phase 3 agrega controles interactivos por fila a esta misma tabla — considerar TanStack Virtual antes o durante Phase 3
+- ✅ RESUELTO [Phase 3 P2]: Tabla de Internships (16,109 filas) sin virtualización — resuelto con `@tanstack/react-virtual` (VirtualizedOpportunitiesTable). Medido en vivo: tab-switcher alcanzable en tiempo constante (<2s, dominado por el round-trip de Postgres, no por hidratación) en vez de 6-13s; DOM montado 13-27 filas en vez de 16,109+; un click en StatusDropdown que antes de virtualizar nunca resolvía (30-240s+ timeout, Radix Portal hideOthers) ahora resuelve en 400-1000ms
 - ⚠️ [Phase 2] Impeccable finish-reviewer/documenter corrieron en modo degradado (inline, sin subagentes) — recomendable una re-revisión independiente cuando el harness lo soporte
 
 ## Deferred Items
@@ -115,7 +120,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T04:00:00.000Z
-Stopped at: Completed 03-01-PLAN.md (applications queries/Server Action/StatusDropdown) — ready for 03-02-PLAN.md (notes autosave + virtualization + accessibility pass)
+Last session: 2026-09-08T04:06:44.554Z
+Stopped at: Completed 03-02-PLAN.md (notes autosave + row virtualization + a11y verification) — Phase 3 (Application Tracking) fully complete, ready for Phase 4 (Deploy)
 Resume file: None
 </content>
