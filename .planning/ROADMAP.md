@@ -54,7 +54,10 @@ Plans:
   4. Cada escritura del callback deja un registro de exactamente qué datos se enviaron a esa aplicación específica, no solo el perfil global
   5. Ese historial se referencia siempre por `opportunity_external_id`, nunca por el id serial de cache
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 06-01-PLAN.md — Endpoint atómico `POST /api/applications/[externalId]/apply-session`: tabla `application_history` + migración, validación de transición/colisión, upsert de perfil, y verificación de datos + HTTP real (CALLBACK-01, CALLBACK-02, PROFILE-03, AUDIT-01, AUDIT-02)
 
 ### Phase 7: Send to AI
 
@@ -79,6 +82,6 @@ Fases de v1.1 en orden numérico: 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 5. Perfil y Etapas de Tracking | 2/2 | Complete | 2026-09-08 |
-| 6. Callback API de Auto-apply | 0/TBD | Not started | - |
+| 6. Callback API de Auto-apply | 0/1 | Not started | - |
 | 7. Send to AI | 0/TBD | Not started | - |
 </content>
