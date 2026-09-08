@@ -2,7 +2,9 @@ import { ExternalLink } from "lucide-react";
 
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { FilterChips } from "@/components/dashboard/filter-chips";
+import { FreshnessBadge } from "@/components/dashboard/freshness-badge";
 import { SearchBar } from "@/components/dashboard/search-bar";
+import { StaleSyncBanner } from "@/components/dashboard/stale-sync-banner";
 import { StatusPill } from "@/components/dashboard/status-pill";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { db } from "@/db/client";
 import { listBenefits } from "@/db/queries/benefits";
 import {
   getDistinctCategories,
@@ -23,6 +26,10 @@ import {
   type OpportunitySource,
   type OpportunityStatus,
 } from "@/db/queries/opportunities";
+import {
+  getLatestSyncPerSource,
+  type KnownSource,
+} from "@/db/queries/sync-log";
 
 // This dashboard has exactly one reader (Juan) and its data lives in
 // Postgres, itself already the cache for the 2h GitHub sync (PRODUCT.md
@@ -38,6 +45,17 @@ type TabValue = "internships" | "underclassmen" | "benefits";
 const TAB_SOURCE: Record<Exclude<TabValue, "benefits">, OpportunitySource> = {
   internships: "summer2027-internships",
   underclassmen: "underclassmen-opportunities",
+};
+
+/**
+ * Every tab's freshness-badge/stale-banner source, `benefits` included
+ * (unlike `TAB_SOURCE`, which only covers `opportunities` table sources).
+ * DISC-04 applies to all 3 tabs, not just the two `opportunities`-backed ones.
+ */
+const TAB_SYNC_SOURCE: Record<TabValue, KnownSource> = {
+  internships: "summer2027-internships",
+  underclassmen: "underclassmen-opportunities",
+  benefits: "student-benefits",
 };
 
 function parseTab(raw: string | undefined): TabValue {
@@ -72,7 +90,7 @@ export default async function Home({
   };
   const benefitFilters = { search: firstValue(params.q) };
 
-  const [internships, underclassmen, benefits, categories, roleTypes] =
+  const [internships, underclassmen, benefits, categories, roleTypes, syncBySource] =
     await Promise.all([
       listOpportunities(
         "summer2027-internships",
@@ -89,7 +107,10 @@ export default async function Home({
       activeTab === "benefits"
         ? Promise.resolve([])
         : getDistinctRoleTypes(TAB_SOURCE[activeTab]),
+      getLatestSyncPerSource(db),
     ]);
+
+  const activeTabSyncRow = syncBySource[TAB_SYNC_SOURCE[activeTab]];
 
   return (
     <div className="flex h-dvh flex-col">
@@ -103,7 +124,7 @@ export default async function Home({
         value={activeTab}
         className="flex min-h-0 flex-1 flex-col gap-0"
       >
-        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2">
+        <div className="flex flex-wrap items-start gap-3 border-b border-border px-4 py-2">
           <TabsList variant="line">
             <TabsTrigger value="internships">
               Internships <Count n={countActive(internships)} />
@@ -116,17 +137,38 @@ export default async function Home({
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex flex-1 flex-wrap items-center justify-center gap-3">
+          {/*
+            `max-h-24 overflow-y-auto`: Underclassmen's real source data has
+            102 distinct `category` values (long eligibility-requirement
+            strings, a Phase 1 ingestion data-quality gap — see 02-03-SUMMARY.md
+            "Issues Encountered," out of this plan's scope to fix at the
+            source). Unbounded `flex-wrap` on that many/long chips was
+            measured pushing this row past 1500px tall, squeezing the
+            table's `flex-1` sibling to 0 height (Playwright-measured, not
+            just visually estimated) and making the entire Underclassmen tab
+            invisible. Every chip is still in the DOM and reachable by
+            Tab — this only bounds the row's own vertical growth so the
+            table below it always has real space, regardless of how many
+            filter values a source happens to have.
+          */}
+          <div className="flex max-h-24 flex-1 flex-wrap items-center justify-center gap-3 overflow-y-auto py-1">
             <SearchBar />
             <FilterChips categories={categories} roleTypes={roleTypes} />
           </div>
+
+          <FreshnessBadge latestRow={activeTabSyncRow} />
         </div>
 
         <TabsContent
           value="internships"
-          className="min-h-0 flex-1 overflow-auto"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <OpportunitiesTable rows={internships} />
+          <StaleSyncBanner
+            latestRow={syncBySource[TAB_SYNC_SOURCE.internships]}
+          />
+          <div className="min-h-0 flex-1 overflow-auto">
+            <OpportunitiesTable rows={internships} />
+          </div>
         </TabsContent>
 
         {/*
@@ -138,13 +180,24 @@ export default async function Home({
         */}
         <TabsContent
           value="underclassmen"
-          className="min-h-0 flex-1 overflow-auto"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <OpportunitiesTable rows={underclassmen} deemphasized />
+          <StaleSyncBanner
+            latestRow={syncBySource[TAB_SYNC_SOURCE.underclassmen]}
+          />
+          <div className="min-h-0 flex-1 overflow-auto">
+            <OpportunitiesTable rows={underclassmen} deemphasized />
+          </div>
         </TabsContent>
 
-        <TabsContent value="benefits" className="min-h-0 flex-1 overflow-auto">
-          <BenefitsTable rows={benefits} />
+        <TabsContent
+          value="benefits"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          <StaleSyncBanner latestRow={syncBySource[TAB_SYNC_SOURCE.benefits]} />
+          <div className="min-h-0 flex-1 overflow-auto">
+            <BenefitsTable rows={benefits} />
+          </div>
         </TabsContent>
       </DashboardTabs>
     </div>
