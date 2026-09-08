@@ -25,19 +25,24 @@ export interface OpportunityFilters {
 }
 
 /**
- * Reads rows (active AND inactive, unless narrowed by `filters.status`) for a
- * given source, newest first, optionally narrowed by search text / category /
- * role type / open-closed status. All filters combine with AND.
- *
- * Inactive rows are intentionally included by default, not filtered out here
- * — DISC-03 requires the UI to *show* closed/inactive listings (via
- * `<StatusPill>`), not hide them. Ordered `postedAt desc nulls last, id desc`
- * so rows missing an upstream posted date sink to the bottom instead of
- * leading the table.
+ * Plain LIMIT/OFFSET pair — both always caller-validated `number`s
+ * (page.tsx's `parsePage`), never derived from an unvalidated string inside
+ * the query layer itself (T-04-11/T-04-12). Drizzle binds both as
+ * parameterized values, same guarantee as `eq()`/`ilike()` (T-02-04).
  */
-export async function listOpportunities(
+export interface Pagination {
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Shared WHERE-condition builder for `listOpportunities`/`countOpportunities`
+ * — keeps the two queries' filter semantics identical by construction
+ * instead of by convention.
+ */
+function buildOpportunityConditions(
   source: OpportunitySource,
-  filters: OpportunityFilters = {},
+  filters: OpportunityFilters,
 ) {
   const conditions = [eq(opportunities.source, source)];
 
@@ -63,11 +68,62 @@ export async function listOpportunities(
     conditions.push(eq(opportunities.isActive, false));
   }
 
+  return conditions;
+}
+
+/**
+ * Reads one PAGE of rows (active AND inactive, unless narrowed by
+ * `filters.status`) for a given source, newest first, optionally narrowed by
+ * search text / category / role type / open-closed status. All filters
+ * combine with AND.
+ *
+ * Inactive rows are intentionally included by default, not filtered out here
+ * — DISC-03 requires the UI to *show* closed/inactive listings (via
+ * `<StatusPill>`), not hide them. Ordered `postedAt desc nulls last, id desc`
+ * so rows missing an upstream posted date sink to the bottom instead of
+ * leading the table.
+ *
+ * `pagination` bounds the query to a single page via `.limit()/.offset()` —
+ * 04-05-PLAN.md's whole point is that even the ACTIVE tab's query is now
+ * bounded to `PAGE_SIZE` rows, not just the inactive tabs' (which already
+ * only got a cheap `count()`, see `countActiveOpportunities` below).
+ */
+export async function listOpportunities(
+  source: OpportunitySource,
+  filters: OpportunityFilters = {},
+  pagination: Pagination,
+) {
+  const conditions = buildOpportunityConditions(source, filters);
+
   return db
     .select()
     .from(opportunities)
     .where(and(...conditions))
-    .orderBy(sql`${opportunities.postedAt} desc nulls last`, desc(opportunities.id));
+    .orderBy(sql`${opportunities.postedAt} desc nulls last`, desc(opportunities.id))
+    .limit(pagination.limit)
+    .offset(pagination.offset);
+}
+
+/**
+ * Filtered total row count for a source — same WHERE clause as
+ * `listOpportunities` (via the shared `buildOpportunityConditions` helper),
+ * but a single `count()` instead of the page's rows. Feeds
+ * `PaginationControls`'s "Mostrando X–Y de Z" and the aria-live result
+ * count — distinct from `countActiveOpportunities` below, which is always
+ * scoped to `isActive: true` regardless of the current filter set.
+ */
+export async function countOpportunities(
+  source: OpportunitySource,
+  filters: OpportunityFilters = {},
+): Promise<number> {
+  const conditions = buildOpportunityConditions(source, filters);
+
+  const [row] = await db
+    .select({ value: count() })
+    .from(opportunities)
+    .where(and(...conditions));
+
+  return row?.value ?? 0;
 }
 
 /**

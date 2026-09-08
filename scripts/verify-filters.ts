@@ -22,7 +22,14 @@ import { listBenefits } from "../src/db/queries/benefits";
  *
  * Every value filtered on below is derived from a live row (never
  * hardcoded), so a non-zero match count is guaranteed by construction.
+ *
+ * `listOpportunities`/`listBenefits` gained a required `pagination` param
+ * in 04-05 (real server-side pagination) — this script passes a generously
+ * large limit so its own assertions (built around "every matching row",
+ * not just one page) keep behaving the same as before pagination existed.
  */
+const UNBOUNDED_PAGE = { limit: 100_000, offset: 0 };
+
 async function main() {
   const source = "summer2027-internships" as const;
 
@@ -64,7 +71,7 @@ async function main() {
   const benefitSearchTerm = sampleBenefit.title!.slice(0, 4);
 
   // Behavior 1: search matches title OR company, case-insensitively.
-  const searchResults = await listOpportunities(source, { search: searchTerm });
+  const searchResults = await listOpportunities(source, { search: searchTerm }, UNBOUNDED_PAGE);
   assert.ok(
     searchResults.length > 0,
     `expected at least one match for search="${searchTerm}"`,
@@ -78,9 +85,11 @@ async function main() {
   }
 
   // Behavior 2: category filter is an exact match.
-  const categoryResults = await listOpportunities(source, {
-    category: sampleCategory,
-  });
+  const categoryResults = await listOpportunities(
+    source,
+    { category: sampleCategory },
+    UNBOUNDED_PAGE,
+  );
   assert.ok(
     categoryResults.length > 0,
     `expected at least one match for category="${sampleCategory}"`,
@@ -91,17 +100,17 @@ async function main() {
   );
 
   // Behavior 3: status filter narrows to isActive true/false; omitting returns both.
-  const openResults = await listOpportunities(source, { status: "open" });
+  const openResults = await listOpportunities(source, { status: "open" }, UNBOUNDED_PAGE);
   assert.ok(
     openResults.every((row) => row.isActive === true),
     "status=open returned an inactive row",
   );
-  const closedResults = await listOpportunities(source, { status: "closed" });
+  const closedResults = await listOpportunities(source, { status: "closed" }, UNBOUNDED_PAGE);
   assert.ok(
     closedResults.every((row) => row.isActive === false),
     "status=closed returned an active row",
   );
-  const unfilteredResults = await listOpportunities(source);
+  const unfilteredResults = await listOpportunities(source, {}, UNBOUNDED_PAGE);
   assert.ok(
     unfilteredResults.some((row) => row.isActive) &&
       unfilteredResults.some((row) => !row.isActive),
@@ -109,20 +118,22 @@ async function main() {
   );
 
   // Behavior 4: combined filters AND together; zero matches return [] without throwing.
-  const combinedResults = await listOpportunities(source, {
-    search: searchTerm,
-    category: sampleCategory,
-    status: "open",
-  });
+  const combinedResults = await listOpportunities(
+    source,
+    { search: searchTerm, category: sampleCategory, status: "open" },
+    UNBOUNDED_PAGE,
+  );
   assert.ok(
     combinedResults.every(
       (row) => row.isActive === true && row.category === sampleCategory,
     ),
     "combined filters did not apply as AND",
   );
-  const zeroMatchResults = await listOpportunities(source, {
-    search: "zzzz-no-such-opportunity-should-ever-match-zzzz",
-  });
+  const zeroMatchResults = await listOpportunities(
+    source,
+    { search: "zzzz-no-such-opportunity-should-ever-match-zzzz" },
+    UNBOUNDED_PAGE,
+  );
   assert.deepEqual(
     zeroMatchResults,
     [],
@@ -130,7 +141,7 @@ async function main() {
   );
 
   // Behavior 5: benefits search matches title/description/tag, case-insensitively.
-  const benefitResults = await listBenefits({ search: benefitSearchTerm });
+  const benefitResults = await listBenefits({ search: benefitSearchTerm }, UNBOUNDED_PAGE);
   assert.ok(
     benefitResults.length > 0,
     `expected at least one benefit match for search="${benefitSearchTerm}"`,
