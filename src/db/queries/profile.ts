@@ -7,6 +7,19 @@ import { profileFields } from "@/db/schema";
 export type ProfileField = typeof profileFields.$inferSelect;
 
 /**
+ * Anything that exposes the same `.select()/.insert()/.onConflictDoUpdate()`
+ * surface `upsertProfileField` needs — either the top-level `db` handle or
+ * the `tx` handle Drizzle passes into a `db.transaction(async (tx) => ...)`
+ * callback. Derived structurally from `db.transaction`'s own callback
+ * parameter type (rather than hand-typed against `NodePgDatabase`/
+ * `NodePgTransaction` generics) so it can never drift out of sync with the
+ * installed drizzle-orm version's actual transaction type.
+ */
+type TransactionCallback = Parameters<typeof db.transaction>[0];
+type Transaction = Parameters<TransactionCallback>[0];
+type Executor = typeof db | Transaction;
+
+/**
  * All profile fields, ordered by `createdAt` ascending (insertion order,
  * per UI-SPEC "Layout — Perfil Tab": groups and rows within a group render
  * in the order they were first created, not alphabetically or by category).
@@ -56,11 +69,22 @@ export interface UpsertProfileFieldResult {
  * same-label update (unsurprising) or a different-label collision, so the
  * caller (`saveProfileFields`) can surface that to Juan instead of always
  * reporting a plain "Guardado".
+ *
+ * `executor` (optional, defaults to the top-level `db`) lets the Phase 6
+ * apply-session callback route pass its `tx` handle so this same
+ * collision-detecting select-then-upsert runs INSIDE that route's single
+ * atomic `db.transaction()` — a collision there must abort the entire
+ * callback write (status + history, not just the profile row), which only
+ * works if this function's reads/writes participate in that same
+ * transaction rather than opening their own (06-CONTEXT.md: "la escritura
+ * falla con error claro, nunca sobreescribe en silencio" refers to the
+ * WHOLE callback write, not just this table).
  */
 export async function upsertProfileField(
   input: UpsertProfileFieldInput,
+  executor: Executor = db,
 ): Promise<UpsertProfileFieldResult> {
-  const existing = await db
+  const existing = await executor
     .select({ label: profileFields.label })
     .from(profileFields)
     .where(eq(profileFields.key, input.key));
@@ -68,7 +92,7 @@ export async function upsertProfileField(
   const existingLabel = existing[0]?.label;
   const collided = existingLabel !== undefined && existingLabel !== input.label;
 
-  await db
+  await executor
     .insert(profileFields)
     .values(input)
     .onConflictDoUpdate({

@@ -165,6 +165,26 @@ export async function getDistinctCategories(
     .sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * Existence check for the Phase 6 apply-session callback route
+ * (`opportunityExistsByExternalId`) — called BEFORE opening any
+ * `db.transaction()`, so a URL `externalId` that matches no real
+ * opportunity 404s without writing anything to `applications`/
+ * `application_history` (06-CONTEXT.md: "no crea nada a ciegas"). Scoped
+ * to 1 row via `.limit(1)` — this only needs a boolean, not the full row.
+ */
+export async function opportunityExistsByExternalId(
+  externalId: string,
+): Promise<boolean> {
+  const rows = await db
+    .select({ id: opportunities.id })
+    .from(opportunities)
+    .where(eq(opportunities.externalId, externalId))
+    .limit(1);
+
+  return rows.length > 0;
+}
+
 /** Same contract as `getDistinctCategories`, for `roleType`. */
 export async function getDistinctRoleTypes(
   source: OpportunitySource,

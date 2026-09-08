@@ -53,3 +53,50 @@ export const MANUALLY_SELECTABLE_STATUSES = [
   "rejected",
   "accepted",
 ] as const;
+
+/**
+ * The exact complement of `MANUALLY_SELECTABLE_STATUSES` over
+ * `APPLICATION_STATUSES` — the 3 auto-apply intermediate states, in
+ * forward-progress order. This is the ONLY enum the Phase 6 callback route
+ * (`POST /api/applications/[externalId]/apply-session`) accepts as an
+ * input `status` value; the 6 manual statuses above remain the exclusive
+ * domain of the `updateApplicationStatus` Server Action (06-CONTEXT.md:
+ * "El endpoint solo acepta los 3 estados nuevos ... nunca los 6
+ * manuales"). Order matters here — `isForwardAutoApplyTransition` below
+ * uses each value's index in this tuple as its progress rank.
+ */
+export const AUTO_APPLY_CALLBACK_STATUSES = [
+  "auto_fill_in_progress",
+  "ready_to_review",
+  "submitted",
+] as const;
+
+export type AutoApplyCallbackStatus = (typeof AUTO_APPLY_CALLBACK_STATUSES)[number];
+
+/**
+ * Simple monotonic state machine (06-CONTEXT.md: "Máquina de estados
+ * simple que solo avanza"). Starting a brand-new auto-apply session — from
+ * `null` (never tracked) or from any of the 6 manual statuses — is always
+ * allowed, since that's not a regression of an in-progress auto-apply
+ * flow, it's the start of one. Once `currentStatus` is itself one of the 3
+ * auto-apply values, `nextStatus` may only stay put or advance
+ * (`auto_fill_in_progress -> ready_to_review -> submitted`); moving to an
+ * earlier index is rejected. Pure/standalone (no `pg`/`db` import, same
+ * criterion as the rest of this module) so it's testable without touching
+ * Postgres and safe to import from a client component if ever needed.
+ */
+export function isForwardAutoApplyTransition(
+  currentStatus: string | null,
+  nextStatus: AutoApplyCallbackStatus,
+): boolean {
+  const currentIndex = (AUTO_APPLY_CALLBACK_STATUSES as readonly string[]).indexOf(
+    currentStatus ?? "",
+  );
+  if (currentIndex === -1) {
+    // Not currently in one of the 3 auto-apply states (including `null`,
+    // never tracked) — starting fresh always advances.
+    return true;
+  }
+  const nextIndex = AUTO_APPLY_CALLBACK_STATUSES.indexOf(nextStatus);
+  return nextIndex >= currentIndex;
+}
