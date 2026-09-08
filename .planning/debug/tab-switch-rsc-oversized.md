@@ -3,6 +3,10 @@ status: fixing
 trigger: "Production bug: after first real data sync populated the dashboard, clicking a tab (Internships / Underclassmen / Beneficios) to switch no longer works. Server Reference ID / destination stream closed early errors in container logs."
 created: 2026-09-08T15:20:00Z
 updated: 2026-09-08T15:55:00Z
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-09-08
+  status: fixing
 ---
 
 ## Current Focus
@@ -60,6 +64,7 @@ reproduction: |
 root_cause: src/app/page.tsx always fetched and rendered the FULL, unfiltered dataset for all three tabs (internships, underclassmen, benefits) on every request/navigation, instead of scoping the fetch to only the currently-active tab. This made every RSC navigation payload — including a simple tab switch — include all three tabs' complete data. Row counts (~16k+ across sources) were similar before and after the first real sync, but real production title/company/location/description text is far longer than the short test fixtures used previously, pushing the serialized payload from a tolerable size to 17.4MB / 14.2s, which the browser (and/or Cloudflare in front of it) aborts mid-stream.
 
 fix: |
+
   - src/app/page.tsx: only call `listOpportunities`/`listBenefits` with full results for the currently active tab; the other two tabs resolve to `[]` instead of a full unfiltered fetch.
   - src/db/queries/opportunities.ts: added `countActiveOpportunities(source)` — a cheap `COUNT(*) WHERE source = ? AND is_active = true` query.
   - src/db/queries/benefits.ts: added `countActiveBenefits()` — same pattern for the benefits table.
@@ -70,6 +75,7 @@ verification: |
   Production: NOT YET VERIFIED — awaiting Dokploy API token from Juan to redeploy. Plan: redeploy, then re-run the curl RSC repro (expect response well under 1MB, well under 1s) and the Playwright click repro (expect no ERR_ABORTED, aria-selected flips to true promptly), and tail fresh container logs to confirm "destination stream closed early" does not recur.
 
 files_changed:
+
   - src/app/page.tsx
   - src/db/queries/opportunities.ts
   - src/db/queries/benefits.ts
