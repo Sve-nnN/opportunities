@@ -17,8 +17,9 @@ import {
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/db/client";
 import { getApplicationsByExternalIds } from "@/db/queries/applications";
-import { listBenefits } from "@/db/queries/benefits";
+import { countActiveBenefits, listBenefits } from "@/db/queries/benefits";
 import {
+  countActiveOpportunities,
   getDistinctCategories,
   getDistinctRoleTypes,
   listOpportunities,
@@ -90,17 +91,31 @@ export default async function Home({
   };
   const benefitFilters = { search: firstValue(params.q) };
 
-  const [internships, underclassmen, benefits, categories, roleTypes, syncBySource] =
+  // Only the ACTIVE tab's full row set is ever fetched — the other two
+  // tabs get a cheap SQL count instead. Every one of these three sources
+  // can run into the tens of thousands of real rows; serializing all three
+  // full datasets into a single RSC payload on EVERY navigation (including
+  // a plain tab switch, which only needs the newly-active tab's rows) was
+  // measured live producing a 17MB/14s flight response once production's
+  // real data volume replaced the shorter local/test fixtures — large and
+  // slow enough that the browser (and Cloudflare in front of it) aborted
+  // the in-flight fetch, which is what made tab switching "not work."
+  const [internships, underclassmen, benefits, internshipsCount, underclassmenCount, benefitsCount, categories, roleTypes, syncBySource] =
     await Promise.all([
-      listOpportunities(
-        "summer2027-internships",
-        activeTab === "internships" ? opportunityFilters : {},
-      ),
-      listOpportunities(
-        "underclassmen-opportunities",
-        activeTab === "underclassmen" ? opportunityFilters : {},
-      ),
-      listBenefits(activeTab === "benefits" ? benefitFilters : {}),
+      activeTab === "internships"
+        ? listOpportunities("summer2027-internships", opportunityFilters)
+        : Promise.resolve([]),
+      activeTab === "underclassmen"
+        ? listOpportunities("underclassmen-opportunities", opportunityFilters)
+        : Promise.resolve([]),
+      activeTab === "benefits" ? listBenefits(benefitFilters) : Promise.resolve([]),
+      activeTab === "internships"
+        ? Promise.resolve(-1)
+        : countActiveOpportunities("summer2027-internships"),
+      activeTab === "underclassmen"
+        ? Promise.resolve(-1)
+        : countActiveOpportunities("underclassmen-opportunities"),
+      activeTab === "benefits" ? Promise.resolve(-1) : countActiveBenefits(),
       activeTab === "benefits"
         ? Promise.resolve([])
         : getDistinctCategories(TAB_SOURCE[activeTab]),
@@ -150,13 +165,24 @@ export default async function Home({
         <div className="flex flex-wrap items-start gap-3 border-b border-border px-4 py-2">
           <TabsList variant="line">
             <TabsTrigger value="internships">
-              Internships <Count n={countActive(internships)} />
+              Internships{" "}
+              <Count
+                n={activeTab === "internships" ? countActive(internships) : internshipsCount}
+              />
             </TabsTrigger>
             <TabsTrigger value="underclassmen">
-              Underclassmen <Count n={countActive(underclassmen)} />
+              Underclassmen{" "}
+              <Count
+                n={
+                  activeTab === "underclassmen"
+                    ? countActive(underclassmen)
+                    : underclassmenCount
+                }
+              />
             </TabsTrigger>
             <TabsTrigger value="benefits">
-              Beneficios .edu <Count n={countActive(benefits)} />
+              Beneficios .edu{" "}
+              <Count n={activeTab === "benefits" ? countActive(benefits) : benefitsCount} />
             </TabsTrigger>
           </TabsList>
 

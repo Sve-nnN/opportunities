@@ -1,4 +1,4 @@
-import { and, asc, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { benefits } from "@/db/schema";
@@ -41,4 +41,14 @@ export async function listBenefits(filters: BenefitFilters = {}) {
     return query.where(and(...conditions)).orderBy(asc(benefits.title));
   }
   return query.orderBy(asc(benefits.title));
+}
+
+/** Same contract as `countActiveOpportunities` (queries/opportunities.ts), for `student-benefits`. */
+export async function countActiveBenefits(): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(benefits)
+    .where(eq(benefits.isActive, true));
+
+  return row?.value ?? 0;
 }

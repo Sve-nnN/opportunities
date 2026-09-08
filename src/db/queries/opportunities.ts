@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { opportunities } from "@/db/schema";
@@ -68,6 +68,25 @@ export async function listOpportunities(
     .from(opportunities)
     .where(and(...conditions))
     .orderBy(sql`${opportunities.postedAt} desc nulls last`, desc(opportunities.id));
+}
+
+/**
+ * Count of `isActive` rows for a source — same "what's actionable today"
+ * definition as `countActive()` in page.tsx, but computed in SQL instead of
+ * fetching every row just to filter+count them client-side. Used for the
+ * inactive tabs' badge counts, where the full row set is deliberately NOT
+ * fetched (see page.tsx) to keep every navigation's RSC payload scoped to
+ * the tab actually being viewed.
+ */
+export async function countActiveOpportunities(
+  source: OpportunitySource,
+): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(opportunities)
+    .where(and(eq(opportunities.source, source), eq(opportunities.isActive, true)));
+
+  return row?.value ?? 0;
 }
 
 /**
