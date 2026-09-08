@@ -21,10 +21,25 @@ const keySchema = z.string().min(1);
 // across this codebase.
 const valueSchema = z.string().trim().min(1).max(2000);
 
+export interface ProfileFieldCollision {
+  /** The label Juan just typed/submitted. */
+  label: string;
+  /** The pre-existing row's label that shares the same derived `key`. */
+  existingLabel: string;
+}
+
 export interface SaveProfileFieldsResult {
   ok: boolean;
   savedCount?: number;
   error?: string;
+  /**
+   * 05-REVIEW.md CR-01: populated (non-empty) whenever `normalizeToKey`
+   * collided a submitted label onto the `key` of a pre-existing row with a
+   * DIFFERENT label — meaning that row's value/category was just
+   * overwritten. The caller must surface this to Juan (never silently
+   * treat it the same as a fresh "Guardado").
+   */
+  collisions?: ProfileFieldCollision[];
 }
 
 /**
@@ -54,19 +69,27 @@ export async function saveProfileFields(
     return { ok: false, error: "No valid entries to save" };
   }
 
+  const collisions: ProfileFieldCollision[] = [];
   for (const entry of validEntries) {
-    await upsertProfileField({
+    const { collided, existingLabel } = await upsertProfileField({
       key: normalizeToKey(entry.label),
       label: entry.label,
       value: entry.value,
       category: entry.category,
       source: "manual",
     });
+    if (collided && existingLabel !== undefined) {
+      collisions.push({ label: entry.label, existingLabel });
+    }
   }
 
   revalidatePath("/");
 
-  return { ok: true, savedCount: validEntries.length };
+  return {
+    ok: true,
+    savedCount: validEntries.length,
+    ...(collisions.length > 0 ? { collisions } : {}),
+  };
 }
 
 export interface UpdateProfileFieldValueResult {

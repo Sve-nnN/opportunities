@@ -127,7 +127,14 @@ export function StatusDropdown({
     });
   }
 
-  const CurrentIcon = STATUS_META[status].Icon;
+  // 05-REVIEW.md WR-03: `status` is a free-text Postgres column with no
+  // CHECK constraint — a future writer (Phase 6 callback, hand-edited row,
+  // typo'd constant) could persist a 10th value outside STATUS_META, which
+  // would otherwise crash on `STATUS_META[status].Icon` being undefined.
+  // Fall back to the raw status string + a neutral icon instead of
+  // crashing the whole table render.
+  const meta = STATUS_META[status] ?? { label: status, Icon: CircleDashed };
+  const CurrentIcon = meta.Icon;
   const isAutoStatus = AUTO_STATUSES.has(status);
 
   return (
@@ -153,7 +160,7 @@ export function StatusDropdown({
       >
         <SelectValue>
           <CurrentIcon aria-hidden="true" className="size-3.5 shrink-0" />
-          {STATUS_META[status].label}
+          {meta.label}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>

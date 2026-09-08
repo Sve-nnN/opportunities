@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Pencil } from "lucide-react";
+import { AlertTriangle, Pencil } from "lucide-react";
 
 import { saveProfileFields, updateProfileFieldValue } from "@/app/actions/profile";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,30 @@ import { cn } from "@/lib/utils";
 const DEBOUNCE_MS = 500;
 
 type SaveState = "idle" | "saving" | "saved";
+
+/**
+ * 05-REVIEW.md CR-01: `normalizeToKey` is not injective, so a submitted
+ * label can silently collide onto the `key` of a different pre-existing
+ * label (e.g. "LinkedIn" and "linkedin" both become `key = "linkedin"`),
+ * overwriting that row's value/category. `saveProfileFields` now reports
+ * this back as `result.collisions`; render it as a visible alert (icon +
+ * text, never color alone per A11Y.md) instead of the plain "Guardado"
+ * text so Juan knows an overwrite — not a fresh insert — just happened.
+ */
+function CollisionWarning({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-foreground"
+    >
+      <AlertTriangle
+        aria-hidden="true"
+        className="mt-0.5 size-3.5 shrink-0 text-destructive"
+      />
+      <span>{message}</span>
+    </div>
+  );
+}
 
 /**
  * "Perfil" tab (PROFILE-01/02, 05-CONTEXT.md): Juan's flexible key-value
@@ -69,27 +93,57 @@ export function ProfileTab({ fields }: { fields: ProfileField[] }) {
 }
 
 /**
+ * 05-REVIEW.md WR-02: `key` gets `normalizeToKey` specifically so that
+ * visually-different-but-semantically-same labels don't fragment the data
+ * model — `category` had no equivalent treatment, so e.g. "contacto" (bulk
+ * seed) and "Contacto" (typed by hand later) became two separate,
+ * identically-labeled group headings. Normalize case/whitespace ONLY for
+ * grouping/dedup comparisons; the original `category` string (first
+ * occurrence's casing) is still what's displayed.
+ */
+function normalizeCategoryKey(category: string): string {
+  return category.trim().toLowerCase();
+}
+
+/**
  * Groups the already-`createdAt`-ordered `fields` array by `category` in
  * first-appearance order (single pass, per UI-SPEC "render groups in the
- * order categories were first created").
+ * order categories were first created"). Grouping itself is
+ * case/whitespace-insensitive (WR-02); the displayed heading keeps the
+ * exact casing of whichever field in the group was created first.
  */
 function groupByCategory(
   fields: ProfileField[],
 ): [string, ProfileField[]][] {
-  const map = new Map<string, ProfileField[]>();
+  const map = new Map<
+    string,
+    { displayCategory: string; rows: ProfileField[] }
+  >();
   for (const field of fields) {
-    const existing = map.get(field.category);
+    const normalized = normalizeCategoryKey(field.category);
+    const existing = map.get(normalized);
     if (existing) {
-      existing.push(field);
+      existing.rows.push(field);
     } else {
-      map.set(field.category, [field]);
+      map.set(normalized, { displayCategory: field.category, rows: [field] });
     }
   }
-  return Array.from(map.entries());
+  return Array.from(map.values()).map((group) => [
+    group.displayCategory,
+    group.rows,
+  ]);
 }
 
+/** Case/whitespace-deduplicated (WR-02), keeping first-seen display casing. */
 function distinctCategories(fields: ProfileField[]): string[] {
-  return Array.from(new Set(fields.map((field) => field.category)));
+  const seen = new Map<string, string>();
+  for (const field of fields) {
+    const normalized = normalizeCategoryKey(field.category);
+    if (!seen.has(normalized)) {
+      seen.set(normalized, field.category);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 function CategoryGroup({
@@ -140,21 +194,39 @@ function AddFieldPopover({ categories }: { categories: string[] }) {
   const [label, setLabel] = useState("");
   const [value, setValue] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [collisionWarning, setCollisionWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSave() {
     setSaveState("saving");
+    setCollisionWarning(null);
     startTransition(async () => {
-      const result = await saveProfileFields([{ label, value, category }]);
-      if (result.ok) {
-        setSaveState("saved");
-        // Popover stays open (UI-SPEC: "popover stays open after save so
-        // Juan can add another field immediately") — only the inputs clear.
-        setCategory("");
-        setLabel("");
-        setValue("");
-      } else {
-        console.error("[ProfileTab] failed to save field:", result.error);
+      try {
+        const result = await saveProfileFields([{ label, value, category }]);
+        if (result.ok) {
+          setSaveState("saved");
+          if (result.collisions && result.collisions.length > 0) {
+            const { existingLabel } = result.collisions[0];
+            setCollisionWarning(
+              `"${label}" usa la misma clave interna que "${existingLabel}" y sobrescribió su valor.`,
+            );
+          }
+          // Popover stays open (UI-SPEC: "popover stays open after save so
+          // Juan can add another field immediately") — only the inputs clear.
+          setCategory("");
+          setLabel("");
+          setValue("");
+        } else {
+          console.error("[ProfileTab] failed to save field:", result.error);
+          setSaveState("idle");
+        }
+      } catch (err) {
+        // 05-REVIEW.md WR-04: a thrown error (DB connection drop, timeout)
+        // rejects the Server Action promise instead of returning
+        // { ok: false } — without this catch, "Guardando…" would stay
+        // stuck forever with only a generic unhandled-rejection console
+        // entry and no recovery path.
+        console.error("[ProfileTab] unexpected error saving field:", err);
         setSaveState("idle");
       }
     });
@@ -232,6 +304,7 @@ function AddFieldPopover({ categories }: { categories: string[] }) {
               ? "Guardado"
               : " "}
         </p>
+        {collisionWarning && <CollisionWarning message={collisionWarning} />}
       </PopoverContent>
     </Popover>
   );
@@ -271,17 +344,38 @@ function EditFieldPopover({ field }: { field: ProfileField }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       startTransition(async () => {
-        const result = await updateProfileFieldValue(field.key, next);
-        if (result.ok) {
-          setSaveState("saved");
-        } else {
-          // Zod rejected the value or the write failed — surfaced to the
-          // console, same no-toast-system convention as NotesPopover/
-          // StatusDropdown (no visible error banner in this codebase yet).
+        try {
+          const result = await updateProfileFieldValue(field.key, next);
+          if (result.ok) {
+            setSaveState("saved");
+          } else {
+            // Zod rejected the value or the write failed — surfaced to the
+            // console, same no-toast-system convention as NotesPopover/
+            // StatusDropdown (no visible error banner in this codebase yet).
+            console.error(
+              `[EditFieldPopover] failed to save value for ${field.key}:`,
+              result.error,
+            );
+            // 05-REVIEW.md WR-01: revert to the last-known-good value
+            // instead of leaving the rejected/whitespace-only text
+            // displayed with no visible indication the write never landed
+            // — e.g. clearing a field is rejected by valueSchema's
+            // .min(1), so without this the input would silently show
+            // blank while the DB still holds the old value until a full
+            // page reload re-syncs it.
+            setValue(field.value);
+            setSaveState("idle");
+          }
+        } catch (err) {
+          // 05-REVIEW.md WR-04: a thrown error (DB connection drop,
+          // timeout) rejects the promise instead of returning
+          // { ok: false } — without this catch, "Guardando…" would stay
+          // stuck forever with no recovery path.
           console.error(
-            `[EditFieldPopover] failed to save value for ${field.key}:`,
-            result.error,
+            `[EditFieldPopover] unexpected error saving value for ${field.key}:`,
+            err,
           );
+          setValue(field.value);
           setSaveState("idle");
         }
       });
@@ -357,6 +451,7 @@ function BulkLoadPopover() {
     () => BULK_LOAD_SEED_FIELDS.map(() => ""),
   );
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [collisionWarning, setCollisionWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleValueChange(index: number, next: string) {
@@ -383,16 +478,40 @@ function BulkLoadPopover() {
     }
 
     setSaveState("saving");
+    setCollisionWarning(null);
     startTransition(async () => {
-      const result = await saveProfileFields(entries);
-      if (result.ok) {
-        setSaveState("saved");
-        setValues(BULK_LOAD_SEED_FIELDS.map(() => ""));
-        // Closes on success (UI-SPEC: "this is a one-time bulk action, not
-        // a repeat-and-add flow") — unlike AddFieldPopover.
-        setOpen(false);
-      } else {
-        console.error("[BulkLoadPopover] failed to save fields:", result.error);
+      try {
+        const result = await saveProfileFields(entries);
+        if (result.ok) {
+          setSaveState("saved");
+          setValues(BULK_LOAD_SEED_FIELDS.map(() => ""));
+          if (result.collisions && result.collisions.length > 0) {
+            // 05-REVIEW.md CR-01: at least one seed label collided onto an
+            // existing row with a different label and overwrote it — keep
+            // the popover open so Juan actually sees the warning instead
+            // of auto-closing on a silent overwrite (unlike the normal
+            // "closes on success" bulk-load behavior).
+            const names = result.collisions
+              .map((c) => `"${c.label}" → "${c.existingLabel}"`)
+              .join(", ");
+            setCollisionWarning(
+              `${result.collisions.length} campo(s) sobrescribieron uno existente: ${names}.`,
+            );
+          } else {
+            // Closes on success (UI-SPEC: "this is a one-time bulk action,
+            // not a repeat-and-add flow") — unlike AddFieldPopover.
+            setOpen(false);
+          }
+        } else {
+          console.error("[BulkLoadPopover] failed to save fields:", result.error);
+          setSaveState("idle");
+        }
+      } catch (err) {
+        // 05-REVIEW.md WR-04: a thrown error (DB connection drop, timeout)
+        // rejects the promise instead of returning { ok: false } —
+        // without this catch, "Guardando…" would stay stuck forever with
+        // no recovery path.
+        console.error("[BulkLoadPopover] unexpected error saving fields:", err);
         setSaveState("idle");
       }
     });
@@ -438,6 +557,7 @@ function BulkLoadPopover() {
               ? "Guardado"
               : " "}
         </p>
+        {collisionWarning && <CollisionWarning message={collisionWarning} />}
       </PopoverContent>
     </Popover>
   );

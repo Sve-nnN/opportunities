@@ -26,6 +26,20 @@ export interface UpsertProfileFieldInput {
   source: string;
 }
 
+export interface UpsertProfileFieldResult {
+  /**
+   * True when a row already existed for `input.key` AND its `label`
+   * differs from `input.label` — i.e. `normalizeToKey` collided two
+   * distinct-looking labels onto the same key (05-REVIEW.md CR-01: e.g.
+   * "LinkedIn" and "linkedin" both normalize to `key = "linkedin"`).
+   * False for a fresh insert, and false for a genuine re-save of the same
+   * label (expected "last value wins" edit, not a surprising collision).
+   */
+  collided: boolean;
+  /** The pre-existing row's label, present whenever a row for this key already existed (collided or not). */
+  existingLabel?: string;
+}
+
 /**
  * Upsert-by-`key` (never the serial `id`), same pattern as
  * `upsertApplicationStatus`/`upsertApplicationNotes` in
@@ -34,10 +48,26 @@ export interface UpsertProfileFieldInput {
  * for Juan's manual "+ Agregar campo"/"Cargar datos básicos" flows
  * (`source: 'manual'`) and, in Phase 6, the auto-apply callback
  * (`source: 'ai_session'`) — the same function, no new query needed there.
+ *
+ * 05-REVIEW.md CR-01: `normalizeToKey` is not injective, so two distinct
+ * labels can collide onto the same `key` and silently overwrite each
+ * other via `onConflictDoUpdate`. This function now checks for an
+ * existing row on `key` BEFORE writing and reports whether the write is a
+ * same-label update (unsurprising) or a different-label collision, so the
+ * caller (`saveProfileFields`) can surface that to Juan instead of always
+ * reporting a plain "Guardado".
  */
 export async function upsertProfileField(
   input: UpsertProfileFieldInput,
-): Promise<void> {
+): Promise<UpsertProfileFieldResult> {
+  const existing = await db
+    .select({ label: profileFields.label })
+    .from(profileFields)
+    .where(eq(profileFields.key, input.key));
+
+  const existingLabel = existing[0]?.label;
+  const collided = existingLabel !== undefined && existingLabel !== input.label;
+
   await db
     .insert(profileFields)
     .values(input)
@@ -51,6 +81,8 @@ export async function upsertProfileField(
         updatedAt: new Date(),
       },
     });
+
+  return { collided, existingLabel };
 }
 
 /**
