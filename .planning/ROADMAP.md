@@ -73,7 +73,13 @@ Plans:
   3. El estado y las notas persisten en base de datos y se ven igual desde cualquier dispositivo
   4. Juan puede marcar una oportunidad como "guardada/me interesa" sin que cuente como "aplicado"
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+- [ ] 03-01-PLAN.md — applications queries/Server Actions + status dropdown (icon+texto) wired into Internships/Underclassmen, incluye "guardado/me interesa"
+- [ ] 03-02-PLAN.md — notas con autosave debounced + refactor de virtualización (TanStack Virtual) de la tabla + pasada de accesibilidad
+
 **UI hint**: yes
 
 ### Phase 4: Deploy
@@ -99,6 +105,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Ingestion Foundation | 2/2 | Complete    | 2026-09-07 |
 | 2. Discovery UI | 3/3 | Complete    | 2026-09-07 |
-| 3. Application Tracking | 0/TBD | Not started | - |
+| 3. Application Tracking | 0/2 | Not started | - |
 | 4. Deploy | 0/TBD | Not started | - |
 </content>
