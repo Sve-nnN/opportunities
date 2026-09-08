@@ -12,7 +12,7 @@ Juan necesita una sola página que agregue en vivo internships, programas underc
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Ingestion Foundation** - Parsers, normalización y cache en Postgres para las 3 fuentes, con sync programado y `external_id` estable (completed 2026-09-07)
-- [ ] **Phase 2: Discovery UI** - Listado unificado, búsqueda/filtros y catálogo de beneficios sobre la capa de cache
+- [x] **Phase 2: Discovery UI** - Listado unificado, búsqueda/filtros y catálogo de beneficios sobre la capa de cache (completed 2026-09-07)
 - [ ] **Phase 3: Application Tracking** - Estado y notas de postulaciones persistidos en DB, sincronizados entre dispositivos
 - [ ] **Phase 4: Deploy** - App en producción vía Dokploy/Hetzner con subdominio de juan-tech.com y HTTPS funcionando
 
@@ -98,7 +98,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Ingestion Foundation | 2/2 | Complete    | 2026-09-07 |
-| 2. Discovery UI | 3/3 | In Progress|  |
+| 2. Discovery UI | 3/3 | Complete    | 2026-09-07 |
 | 3. Application Tracking | 0/TBD | Not started | - |
 | 4. Deploy | 0/TBD | Not started | - |
 </content>

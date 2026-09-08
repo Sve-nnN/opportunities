@@ -15,13 +15,13 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 - ✓ Ingestión y normalización de las 3 fuentes (Summer2027-Internships, underclassmen-opportunities, student-benefits) en Postgres — Phase 1
 - ✓ Sync programado (cron 2h) + trigger manual protegido, sin fetch-por-request — Phase 1
 - ✓ `external_id` estable (con `url` incluido en el hash tras detectar colisiones reales) y soft-delete aislado por fuente — Phase 1
+- ✓ Ver listado de internships/roles SWE (y afines) actualizado en vivo desde Summer2027-Internships — Phase 2
+- ✓ Ver listado de programas/oportunidades para underclassmen (visible, no oculto, sin scoring aún) — Phase 2
+- ✓ Ver catálogo de beneficios .edu desde student-benefits — Phase 2
+- ✓ Filtrar/buscar oportunidades y beneficios por categoría, tipo, estado (abierto/cerrado) — Phase 2
 
 ### Active
 
-- [ ] Ver listado de internships/roles SWE (y afines) actualizado en vivo desde Summer2027-Internships
-- [ ] Ver listado de programas/oportunidades para underclassmen relevantes (filtrado, ya que su ciclo es avanzado)
-- [ ] Ver catálogo de beneficios .edu (GitHub Student Pack y otros) desde student-benefits
-- [ ] Filtrar/buscar oportunidades y beneficios por categoría, tipo, estado (abierto/cerrado)
 - [ ] Marcar el estado de una postulación propia (por aplicar / aplicado / en proceso / rechazado / aceptado) con notas
 - [ ] Los datos de aplicaciones persisten y se sincronizan entre dispositivos (no solo localStorage)
 - [ ] Datos de oportunidades/beneficios se refrescan desde las fuentes en vivo (no copia estática mantenida a mano)
@@ -60,6 +60,8 @@ Juan abre una sola página y ve, siempre actualizado, qué internships/programas
 | DB de dev en Dokploy (`shared-postgres`, tenant `opportunities`) solo accesible desde la red interna del VPS | No es alcanzable desde fuera para dev local — se usó Postgres local en Docker (puerto 5434) para dev/test, y la DB de Dokploy queda reservada para el deploy real en Fase 4 | ✓ Good |
 | `external_id` de `opportunities` incluye `url` en el hash (no solo company+title+locations) | El plan original colisionaba en 1867/16109 filas reales de Summer2027-Internships; con `url` quedó 16109/16109 únicos | ✓ Good |
 | GITHUB_PAT no bloqueó la ejecución de Fase 1 | Corrimos el sync de prueba sin autenticar (bajo volumen, solo dev); production/cron real necesita el PAT seteado antes de confiar en el sync cada 2h | ⚠️ Revisit antes de Fase 4 |
+| Dirección visual: mundo tipo Linear/Kanban dev-tool (near-black + acento violeta), vía skill Impeccable | Pedido explícito de Juan de usar Impeccable para toda la UI; direction contract en `.impeccable/surfaces/`, documentado en `DESIGN.md` tras el build real | ✓ Good |
+| Tabla de Internships (16,109 filas) sin virtualización | El tab-switcher tarda 6-13s en volverse alcanzable por teclado en producción por renderizar todas las filas dentro del boundary de Tabs (cliente) — no es un trap de teclado, se resuelve solo | ⚠️ Revisit antes de Fase 3 (que agrega controles interactivos por fila a esta misma tabla) — considerar TanStack Virtual |
 
 ## Evolution
 
@@ -79,4 +81,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 after Phase 1*
+*Last updated: 2026-09-07 after Phase 2*
