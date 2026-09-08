@@ -4,7 +4,11 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../src/db/client";
 import { profileFields } from "../src/db/schema";
-import { getAllProfileFields, upsertProfileField } from "../src/db/queries/profile";
+import {
+  getAllProfileFields,
+  updateProfileFieldValue,
+  upsertProfileField,
+} from "../src/db/queries/profile";
 import { normalizeToKey } from "../src/lib/profile-key";
 
 /**
@@ -102,6 +106,104 @@ async function main() {
       `expected the test row (key="${testKey}") to be deleted, but it is still present`,
     );
     console.log("Cleanup: test row removed, live data left untouched.");
+  }
+
+  // Behaviors 1-3 (Task 2): updateProfileFieldValue — a deliberately NOT-an-
+  // upsert function, only ever called from the pencil-edit popover on a row
+  // that already exists.
+  const editKey = "zzzz_verify_profile_edit_test_field_zzzz";
+  const editLabel = "Zzzz Verify Profile Edit Test Field Zzzz";
+
+  try {
+    await upsertProfileField({
+      key: editKey,
+      label: editLabel,
+      value: "original value",
+      category: "contacto",
+      source: "manual",
+    });
+
+    // Behavior 1: updateProfileFieldValue touches ONLY value (+ updatedAt),
+    // leaving label/category/source intact.
+    const updated = await updateProfileFieldValue(editKey, "updated value");
+    assert.equal(
+      updated,
+      true,
+      "expected updateProfileFieldValue to return true for an existing key",
+    );
+    const [afterUpdate] = await db
+      .select()
+      .from(profileFields)
+      .where(eq(profileFields.key, editKey));
+    assert.equal(afterUpdate.value, "updated value");
+    assert.equal(
+      afterUpdate.label,
+      editLabel,
+      "expected label to remain untouched by updateProfileFieldValue",
+    );
+    assert.equal(
+      afterUpdate.category,
+      "contacto",
+      "expected category to remain untouched by updateProfileFieldValue",
+    );
+    assert.equal(
+      afterUpdate.source,
+      "manual",
+      "expected source to remain untouched by updateProfileFieldValue",
+    );
+    console.log(
+      "PASS: updateProfileFieldValue updates only value/updatedAt, leaving label/category/source intact",
+    );
+
+    // Behavior 2: a nonexistent key is a silent no-op (returns false), NEVER
+    // creates a new row — unlike upsertProfileField.
+    const nonexistentKey = "zzzz_verify_profile_nonexistent_key_zzzz";
+    const noopResult = await updateProfileFieldValue(
+      nonexistentKey,
+      "should never be written",
+    );
+    assert.equal(
+      noopResult,
+      false,
+      "expected updateProfileFieldValue on a nonexistent key to return false",
+    );
+    const [shouldNotExist] = await db
+      .select()
+      .from(profileFields)
+      .where(eq(profileFields.key, nonexistentKey));
+    assert.equal(
+      shouldNotExist,
+      undefined,
+      "expected updateProfileFieldValue to never create a row for a nonexistent key",
+    );
+    console.log(
+      "PASS: updateProfileFieldValue on a nonexistent key is a no-op (no row created, returns false)",
+    );
+
+    // Behavior 3: two sequential calls on the same key leave the SECOND
+    // call's value (last write wins, same criterion as Task 1's upsert).
+    await updateProfileFieldValue(editKey, "third value");
+    await updateProfileFieldValue(editKey, "fourth value");
+    const [afterTwoMoreUpdates] = await db
+      .select()
+      .from(profileFields)
+      .where(eq(profileFields.key, editKey));
+    assert.equal(afterTwoMoreUpdates.value, "fourth value");
+    console.log(
+      "PASS: two sequential updateProfileFieldValue calls leave the second call's value",
+    );
+  } finally {
+    await db.delete(profileFields).where(eq(profileFields.key, editKey));
+    const leftover = await db
+      .select()
+      .from(profileFields)
+      .where(eq(profileFields.key, editKey));
+    assert.equal(
+      leftover.length,
+      0,
+      `expected the test row (key="${editKey}") to be deleted, but it is still present`,
+    );
+    console.log("Cleanup: edit-test row removed, live data left untouched.");
   }
 
   console.log("All profile behaviors verified against live Postgres.");
