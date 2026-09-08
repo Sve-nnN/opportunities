@@ -40,8 +40,8 @@
 
 ### Profile (PROFILE) — v1.1
 
-- [ ] **PROFILE-01**: Juan puede ver y editar su perfil de datos (pares clave-valor flexibles, sin schema rígido)
-- [ ] **PROFILE-02**: El perfil arranca con una carga inicial de datos básicos (nombre, email, CV, links)
+- [x] **PROFILE-01**: Juan puede ver y editar su perfil de datos (pares clave-valor flexibles, sin schema rígido)
+- [x] **PROFILE-02**: El perfil arranca con una carga inicial de datos básicos (nombre, email, CV, links)
 - [ ] **PROFILE-03**: Los campos nuevos que una sesión de auto-apply aprende (porque un sitio los pidió) se guardan automáticamente en el perfil para la próxima vez
 
 ### Auto-apply asistido (APPLY) — v1.1
@@ -52,8 +52,8 @@
 
 ### Tracking extendido (TRACK) — v1.1
 
-- [ ] **TRACK-05**: `applications.status` soporta etapas intermedias nuevas (`auto_fill_in_progress` / `ready_to_review` / `submitted`) además de las 6 existentes
-- [ ] **TRACK-06**: El dropdown de estado (UI) refleja y permite ver las etapas nuevas
+- [x] **TRACK-05**: `applications.status` soporta etapas intermedias nuevas (`auto_fill_in_progress` / `ready_to_review` / `submitted`) además de las 6 existentes
+- [x] **TRACK-06**: El dropdown de estado (UI) refleja y permite ver las etapas nuevas
 
 ### Callback API (CALLBACK) — v1.1
 
@@ -129,10 +129,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEPLOY-01 | Phase 4 | Complete |
 | DEPLOY-02 | Phase 4 | Complete |
 | DEPLOY-03 | Phase 4 | Complete |
-| PROFILE-01 | Phase 5 | Pending |
-| PROFILE-02 | Phase 5 | Pending |
-| TRACK-05 | Phase 5 | Pending |
-| TRACK-06 | Phase 5 | Pending |
+| PROFILE-01 | Phase 5 | Complete |
+| PROFILE-02 | Phase 5 | Complete |
+| TRACK-05 | Phase 5 | Complete |
+| TRACK-06 | Phase 5 | Complete |
 | CALLBACK-01 | Phase 6 | Pending |
 | CALLBACK-02 | Phase 6 | Pending |
 | PROFILE-03 | Phase 6 | Pending |

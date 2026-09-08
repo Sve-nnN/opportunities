@@ -2,15 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Auto-apply asistido con IA
-status: planning
-last_updated: "2026-09-08T17:30:00.000Z"
+current_phase: 6
+current_phase_name: Callback API de Auto-apply
+status: executing
+stopped_at: v1.1 ROADMAP.md (Fases 5-7) y STATE.md escritos, REQUIREMENTS.md traceability actualizado a 12/12 mapeado — pendiente de revisión/aprobación del roadmap
+last_updated: "2026-09-08T21:18:58.822Z"
 last_activity: 2026-09-08
+last_activity_desc: Phase 6 execution started
+state_head: c8f4e1d345283448c883d7459558863da67b2885
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+  percent: 33
 ---
 
 # Project State
@@ -20,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
-**Current focus:** Phase 5 — Perfil y Etapas de Tracking (v1.1 roadmap creado, listo para planning)
+**Current focus:** Phase 6 — Callback API de Auto-apply
 
 ## Current Position
 
-Phase: 5 of 7 overall (Phase 1 of 3 dentro de v1.1)
-Plan: — (roadmap creado, sin plans aún)
-Status: Roadmap listo — pendiente de aprobación / `/gsd-plan-phase 5`
-Last activity: 2026-09-08 — ROADMAP.md de v1.1 creado (Fases 5-7), REQUIREMENTS.md traceability actualizado
+Phase: 6 (Callback API de Auto-apply) — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase 6
+Last activity: 2026-09-08 — Phase 6 execution started
 
 Progress: [░░░░░░░░░░] 0% (v1.1)
 
