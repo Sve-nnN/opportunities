@@ -199,6 +199,19 @@ export async function POST(
       const newlyLearnedKeys: string[] = [];
       for (const entry of parsedBody.data.profileUpdates ?? []) {
         const key = normalizeToKey(entry.label);
+
+        // WR-02 (06-REVIEW.md): a label made entirely of characters outside
+        // [a-z0-9] (e.g. "!!!", emoji-only) normalizes to an empty string.
+        // Reachable directly from this externally-callable endpoint's
+        // profileUpdates[].label — reject it before it ever reaches
+        // upsertProfileField/Postgres, rather than writing a
+        // semantically-meaningless empty key.
+        if (key.length === 0) {
+          throw new CallbackValidationError(
+            `profileUpdates label "${entry.label}" does not normalize to a usable key`,
+          );
+        }
+
         const { collided, existingLabel } = await upsertProfileField(
           {
             key,
