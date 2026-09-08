@@ -112,6 +112,17 @@ export default async function Home({
 
   const activeTabSyncRow = syncBySource[TAB_SYNC_SOURCE[activeTab]];
 
+  // Filtered result count for the active tab only — announced via
+  // aria-live so a screen-reader user gets feedback when search/filter
+  // narrows the table, since the table itself re-renders silently on a
+  // Server Component navigation with no page reload (A11Y.md).
+  const activeResultCount =
+    activeTab === "internships"
+      ? internships.length
+      : activeTab === "underclassmen"
+        ? underclassmen.length
+        : benefits.length;
+
   return (
     <div className="flex h-dvh flex-col">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -158,6 +169,16 @@ export default async function Home({
 
           <FreshnessBadge latestRow={activeTabSyncRow} />
         </div>
+
+        {/*
+          Screen-reader-only live region: announces the active tab's
+          filtered result count whenever search/filter narrows the table.
+          The table itself gives no other non-visual signal that a
+          Server-Component navigation just re-rendered its rows.
+        */}
+        <p aria-live="polite" role="status" className="sr-only">
+          {activeResultCount.toLocaleString("en-US")} resultados
+        </p>
 
         <TabsContent
           value="internships"
@@ -240,11 +261,19 @@ function OpportunitiesTable({
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className={stickyHeadClass}>Company</TableHead>
-          <TableHead className={stickyHeadClass}>Title</TableHead>
-          <TableHead className={stickyHeadClass}>Location</TableHead>
-          <TableHead className={stickyHeadClass}>Status</TableHead>
-          <TableHead className={`${stickyHeadClass} text-right`}>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Company
+          </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Title
+          </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Location
+          </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Status
+          </TableHead>
+          <TableHead scope="col" className={`${stickyHeadClass} text-right`}>
             Link
           </TableHead>
         </TableRow>
@@ -314,10 +343,18 @@ function BenefitsTable({ rows }: { rows: BenefitRow[] }) {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className={stickyHeadClass}>Beneficio</TableHead>
-          <TableHead className={stickyHeadClass}>Descripción</TableHead>
-          <TableHead className={stickyHeadClass}>Tags</TableHead>
-          <TableHead className={stickyHeadClass}>Status</TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Beneficio
+          </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Descripción
+          </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Tags
+          </TableHead>
+          <TableHead scope="col" className={stickyHeadClass}>
+            Status
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
