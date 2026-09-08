@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Auto-apply asistido con IA
 status: planning
-last_updated: "2026-09-08T16:51:36.672Z"
+last_updated: "2026-09-08T17:30:00.000Z"
 last_activity: 2026-09-08
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-07)
+See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
-**Current focus:** Phase 4 — Deploy (Phase 3 complete)
+**Current focus:** Phase 5 — Perfil y Etapas de Tracking (v1.1 roadmap creado, listo para planning)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-08 — Milestone v1.1 started
+Phase: 5 of 7 overall (Phase 1 of 3 dentro de v1.1)
+Plan: — (roadmap creado, sin plans aún)
+Status: Roadmap listo — pendiente de aprobación / `/gsd-plan-phase 5`
+Last activity: 2026-09-08 — ROADMAP.md de v1.1 creado (Fases 5-7), REQUIREMENTS.md traceability actualizado
+
+Progress: [░░░░░░░░░░] 0% (v1.1)
 
 ## Performance Metrics
 
@@ -45,6 +47,9 @@ Last activity: 2026-09-08 — Milestone v1.1 started
 | 2 | 3 | - | - |
 | 3 | 2 | - | - |
 | 4 | 4 | - | - |
+| 5 | TBD | - | - |
+| 6 | TBD | - | - |
+| 7 | TBD | - | - |
 
 **Recent Trend:**
 
@@ -72,30 +77,15 @@ Last activity: 2026-09-08 — Milestone v1.1 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- v1.1: se revierte la exclusión de v1.0 sobre auto-apply, acotado a auto-fill + revisión humana (nunca auto-submit)
+- v1.1: el auto-apply corre como sesión externa de Claude Code con Playwright MCP (no Scrapling — research/SUMMARY.md corrigió el brief original: Scrapling es scraping/extracción, no llenado interactivo de formularios SPA)
+- [Roadmap v1.1]: 3 fases derivadas de los 12 requirements de v1.1 (no 15 — REQUIREMENTS.md traía un conteo de coverage desincronizado con su propia lista de requirements; corregido en esta pasada): Phase 5 Perfil+Etapas (foundation observable) → Phase 6 Callback API (escritura atómica: estado+perfil+auditoría en un solo endpoint) → Phase 7 Send to AI (prompt+botón, cierra el loop)
+- [Roadmap v1.1]: AUDIT-01/02 se resuelven dentro de Phase 6 (el callback registra el historial) — la UI para inspeccionar ese historial (APPLY-04) queda diferida a v2/v1.2 por REQUIREMENTS.md, no entra en esta roadmap
 - Fetch en vivo de las 3 fuentes vía sync programado (no fetch-per-request), cacheado en Postgres
 - Tracking de postulaciones incluido desde v1, persistido en DB (no localStorage) para sync multi-dispositivo
 - Deploy en hosting propio (Dokploy/Hetzner) + Cloudflare, no Vercel
-- [Phase 1]: student-benefits.json usa el campo requiresCampus (no campusRequired como asumía research); normalize.ts lo mapea defensivamente
-- [Phase 1]: Sync tracer corrido sin GITHUB_PAT (aun no disponible) contra raw.githubusercontent.com sin autenticar, solo para esta corrida de dev; produccion debe fijar GITHUB_PAT antes de syncs frecuentes
-- [Phase 1]: external_id de summer2027-internships incluye url ademas de company+title+locations (colision real detectada: 1867/16109 filas)
-- [Phase 1]: underclassmen-opportunities tiene 9 tablas GFM con headers distintos, no una sola tabla - mapeo de columnas por alias de header en runtime
-- [Phase 1]: underclassmen-opportunities si expone senal open/closed real (badges Status) - is_active derivado de esa senal, no hardcoded true
-- [Phase 2]: shadcn CLI now installs radix-ui/cn/tw-animate-css instead of individual @radix-ui/react-*+clsx+tailwind-merge packages -- verified legitimacy on npmjs.com before proceeding
-- [Phase 2]: Locked visual direction (near-black #0B0B0D, violet #7C6CF6 accent) implemented as CSS custom properties directly on :root, no light/dark toggle since the app is always-dark
-- [Phase 2]: dashboard-tabs.tsx client wrapper added to mirror active tab into a tab URL param so filters can be scoped server-side to the active tab
-- [Phase 2]: No test framework installed for the tdd=true task; used an ad hoc tsx script (scripts/verify-filters.ts) against live Postgres, matching Phase 1's established verification convention
-- [Phase 2]: getLatestSyncPerSource() uses Drizzle's typed selectDistinctOn, never raw sql DISTINCT ON, to avoid silently mismatching camelCase schema field names against Postgres' raw snake_case column output
-- [Phase 2]: Capped the filter-chips row height (max-h-24) after Playwright measurement showed an unbounded flex-wrap chip row (Underclassmen's 102 raw category values) could collapse the entire table to 0 height
-- [Phase 2]: All accessibility/visual verification in Phase 2 Plan 3 ran against the production standalone build (node .next/standalone/server.js), never pnpm dev — dev mode showed a React Strict Mode double-effect artifact and 50-90s page loads that don't reproduce in production
-- [Phase 2]: Impeccable finish-reviewer/documenter roles ran inline per their degraded-mode fallback (no Agent/Task subagent tool available in this harness) — disclosed in 02-03-SUMMARY.md; a true independent re-review is recommended when available
-- [Phase 3 P1]: Added a UNIQUE constraint on applications.opportunity_external_id (migration 0001) as a prerequisite for onConflictDoUpdate — column existed schema-only since Phase 1 with no constraint
-- [Phase 3 P1]: Moved ApplicationStatus/APPLICATION_STATUSES into src/lib/application-status.ts (no `pg` import) after the initial build broke — the client StatusDropdown component was pulling the Postgres driver into the browser bundle by importing types from db/queries/applications.ts, which imports db/client.ts (pg)
-- [Phase 3 P1]: Removed shadcn's default shadow-md from select.tsx's SelectContent, replaced with border-border — DESIGN.md's Flat-By-Default Rule forbids any box-shadow in this system
-- [Phase 3 P1]: "Guardado/me interesa" implemented purely as a 6th value of the same `status` text column (not the pre-existing unused `isSaved` boolean column) — confirmed via live Postgres that setting status='saved' never touches opportunities.is_active nor applications.is_saved
-- [Phase 3 P2]: Row virtualization for the 16,109+-row table replaced the plan's literal tbody-height+translateY technique with leading/trailing spacer <tr> rows after live measurement proved explicit height on a table-row-group with far fewer real rows causes CSS to redistribute that height onto the rows (measured ~2.4M px per row)
-- [Phase 3 P2]: Roving tabindex requires tabIndex=-1 on a row's interactive descendants too (StatusDropdown/NotesPopover), not just the <tr> — otherwise Tab still steps through every mounted row's controls regardless of which row is "active"
-- [Phase 3 P2]: Fixed a pre-existing (Plan 1) StatusDropdown focus-loss-to-<body> bug tied to Server Action + revalidatePath timing (Radix restores focus immediately, the later Server Component refresh can still knock it away) — added a defensive re-focus poll, found via this plan's own new keyboard-walkthrough a11y check
-- [Phase 4]: [Phase 4 P05]: Made pagination a required (not optional) third param on listOpportunities/listBenefits so no call site can silently omit bounding a query; added isActive field to BenefitFilters mirroring opportunityFilters.status for the active-tab badge count
+- [Phase 3 P1]: "Guardado/me interesa" implementado como 6to valor del mismo `status` (no la columna `isSaved` sin usar)
+- [Phase 4]: pagination requerida (no opcional) en listOpportunities/listBenefits — RSC payload de Internships bajó de ~17MB/14s a ~180KB/40-170ms
 
 ### Pending Todos
 
@@ -103,11 +93,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Verificar en Phase 1 si `Summer2027-Internships` expone datos de deadline parseables; si no, se descarta esa feature del roadmap en vez de arrastrarla como deuda (research/SUMMARY.md)
-- Verificar licencia/atribución de las 3 fuentes de GitHub durante Phase 1 (riesgo MEDIUM, no bloqueante)
-- ✅ RESUELTO [Phase 3 P2]: Tabla de Internships (16,109 filas) sin virtualización — resuelto con `@tanstack/react-virtual` (VirtualizedOpportunitiesTable). Medido en vivo: tab-switcher alcanzable en tiempo constante (<2s, dominado por el round-trip de Postgres, no por hidratación) en vez de 6-13s; DOM montado 13-27 filas en vez de 16,109+; un click en StatusDropdown que antes de virtualizar nunca resolvía (30-240s+ timeout, Radix Portal hideOthers) ahora resuelve en 400-1000ms
+- Verificar en Phase 1 si `Summer2027-Internships` expone datos de deadline parseables (histórico v1.0, no bloqueante para v1.1)
+- ✅ RESUELTO [Phase 3 P2]: Tabla de Internships (16,109 filas) sin virtualización — resuelto con `@tanstack/react-virtual`
 - ⚠️ [Phase 2] Impeccable finish-reviewer/documenter corrieron en modo degradado (inline, sin subagentes) — recomendable una re-revisión independiente cuando el harness lo soporte
-- ⚠️ [Phase 3] El Dockerfile de Phase 1 debe copiar explícitamente `.next/static/` y `public/` al output standalone — confirmado por el verifier de Phase 3 que el standalone build no los incluye por defecto (comportamiento documentado de Next.js, no un bug). Verificar en Phase 4 antes de dar por bueno el build de Dokploy.
+- ⚠️ [Roadmap v1.1 / Phase 6 planning] El payload de "evidencia" para aceptar una transición a `status=submitted` (¿screenshot? ¿URL de confirmación? ¿texto?) no está definido — decisión pendiente para el planning de Phase 6 (research/SUMMARY.md Gaps)
+- ⚠️ [Roadmap v1.1] Manejo de campos de perfil genuinamente sensibles (SSN, historial salarial) queda fuera de v1.1 — no construir cripto especulativa; revisar si hace falta antes de que el perfil crezca con ese tipo de dato (research/SUMMARY.md Gaps, REQUIREMENTS.md Out of Scope)
 
 ## Deferred Items
 
@@ -119,11 +109,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T16:11:43.704Z
-Stopped at: context exhaustion at 75% (2026-09-08)
+Last session: 2026-09-08
+Stopped at: v1.1 ROADMAP.md (Fases 5-7) y STATE.md escritos, REQUIREMENTS.md traceability actualizado a 12/12 mapeado — pendiente de revisión/aprobación del roadmap
 Resume file: None
-</content>
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Revisar el roadmap de v1.1 (Fases 5-7). Una vez aprobado: `/gsd-plan-phase 5`

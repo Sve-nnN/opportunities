@@ -129,24 +129,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEPLOY-01 | Phase 4 | Complete |
 | DEPLOY-02 | Phase 4 | Complete |
 | DEPLOY-03 | Phase 4 | Complete |
-| PROFILE-01 | TBD (roadmap v1.1) | Pending |
-| PROFILE-02 | TBD (roadmap v1.1) | Pending |
-| PROFILE-03 | TBD (roadmap v1.1) | Pending |
-| APPLY-01 | TBD (roadmap v1.1) | Pending |
-| APPLY-02 | TBD (roadmap v1.1) | Pending |
-| APPLY-03 | TBD (roadmap v1.1) | Pending |
-| TRACK-05 | TBD (roadmap v1.1) | Pending |
-| TRACK-06 | TBD (roadmap v1.1) | Pending |
-| CALLBACK-01 | TBD (roadmap v1.1) | Pending |
-| CALLBACK-02 | TBD (roadmap v1.1) | Pending |
-| AUDIT-01 | TBD (roadmap v1.1) | Pending |
-| AUDIT-02 | TBD (roadmap v1.1) | Pending |
+| PROFILE-01 | Phase 5 | Pending |
+| PROFILE-02 | Phase 5 | Pending |
+| TRACK-05 | Phase 5 | Pending |
+| TRACK-06 | Phase 5 | Pending |
+| CALLBACK-01 | Phase 6 | Pending |
+| CALLBACK-02 | Phase 6 | Pending |
+| PROFILE-03 | Phase 6 | Pending |
+| AUDIT-01 | Phase 6 | Pending |
+| AUDIT-02 | Phase 6 | Pending |
+| APPLY-01 | Phase 7 | Pending |
+| APPLY-02 | Phase 7 | Pending |
+| APPLY-03 | Phase 7 | Pending |
 
 **Coverage:**
 
 - v1.0 requirements: 18 total — mapped to phases: 18 — unmapped: 0 ✓
-- v1.1 requirements: 15 total — mapped to phases: 0 (pending roadmap creation) ⚠️
+- v1.1 requirements: 12 total — mapped to phases: 12 — unmapped: 0 ✓ (nota: una pasada anterior de este archivo reportaba "15 total" en este resumen; la lista real de requirements v1.1 arriba siempre tuvo 12 ítems — corregido en esta actualización)
 
 ---
 *Requirements defined: 2026-09-07*
-*Last updated: 2026-09-08 after defining v1.1 requirements*
+*Last updated: 2026-09-08 after v1.1 roadmap creation (Phases 5-7)*
