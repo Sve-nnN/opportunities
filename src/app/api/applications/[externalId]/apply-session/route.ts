@@ -56,7 +56,12 @@ const bodySchema = z.object({
  * "caller sent something semantically invalid" from an unexpected
  * infrastructure failure (which falls through to the generic 500 below).
  */
-class CallbackValidationError extends Error {}
+class CallbackValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CallbackValidationError";
+  }
+}
 
 /**
  * Bearer-secret-gated callback an external Claude Code auto-apply session
