@@ -43,3 +43,4 @@ next-env.d.ts
 
 # GSD-generated derived state cache (regenerated from STATE.md/ROADMAP.md by gsd-tools)
 .planning/state.json
+.planning/research/.cache/
