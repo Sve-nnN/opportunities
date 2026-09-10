@@ -70,7 +70,11 @@ Plans:
   2. Al hacer clic, se genera y copia un prompt con el link de la oportunidad, un snapshot del perfil, instrucción de usar Playwright MCP para el llenado, e instrucción explícita de pedir el OK de Juan antes de enviar
   3. El prompt instruye explícitamente a la sesión de IA a preguntarle a Juan cualquier dato que falte, nunca inventarlo
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Generación del prompt: buildApplyPrompt (7 secciones + mitigación de prompt injection) + generateApplyPrompt Server Action (APPLY-02, APPLY-03)
+- [ ] 07-02-PLAN.md — Botón "Send to AI": Tooltip + Popover controlado, wireado en la tabla, columnas redistribuidas, accesibilidad (APPLY-01, APPLY-02)
 
 **UI hint**: yes
 
@@ -83,5 +87,5 @@ Fases de v1.1 en orden numérico: 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 5. Perfil y Etapas de Tracking | 2/2 | Complete | 2026-09-08 |
 | 6. Callback API de Auto-apply | 1/1 | Complete | 2026-09-08 |
-| 7. Send to AI | 0/TBD | Not started | - |
+| 7. Send to AI | 0/2 | Not started | - |
 </content>
