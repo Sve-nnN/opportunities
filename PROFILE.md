@@ -3,7 +3,9 @@
 Espejo legible del contenido real de la tabla `profile_fields` (Postgres, dev + prod). Este archivo es solo referencia/versionado — la fuente de verdad operativa es la DB, porque es de ahí que `generateApplyPrompt` (Phase 7) arma el snapshot real que va en cada prompt de "Send to AI". Si algo cambia acá, hay que reflejarlo también en la DB (pestaña "Perfil" de la app, o pedirle a Claude que lo actualice).
 
 **Última actualización:** 2026-09-10
-**Fuente:** CV 2026.pdf + certificado de práctica Philharmonie Luxembourg + GitHub (github.com/Sve-nnN) + entrevista directa con Juan
+**Fuente:** CV 2026.pdf + certificado de práctica Philharmonie Luxembourg + GitHub (github.com/Sve-nnN) + juan-tech.com + entrevista directa con Juan
+
+**Voz:** casual, directo, sin relleno — la forma en que Juan habla en el chat, no el tono de copy de marketing de su propio sitio. Frases cortas. Sin "boasts", "showcasing", ni metrics infladas tipo consultora.
 
 ## Contacto
 
@@ -36,19 +38,20 @@ Espejo legible del contenido real de la tabla `profile_fields` (Postgres, dev + 
 
 | Campo | Valor |
 |-------|-------|
-| Resumen profesional | Estudiante de Ingeniería de Software (UPC, ciclo 7) con experiencia profesional como Technical SEO Analyst, un rol con fuerte componente técnico (auditorías de arquitectura de sitio, indexación, Core Web Vitals, migraciones de plataforma) — no marketing de contenidos puro. Además, práctica remota en desarrollo web (Philharmonie Luxembourg) y ~56 repos públicos en GitHub que abarcan desde estructuras de datos en C++ hasta apps full-stack en TypeScript/React, Vue, Java/Spring Boot y bots en Python. Busca internships de Software Engineering para 2027. |
-| Experiencia más reciente | Senior Technical SEO Analyst @ Loops Growth (remoto, nov 2024 – ene 2026) — gestión de +18 clientes internacionales, resolución de issues críticos de indexación, liderazgo de migraciones a Webflow (+25% tráfico orgánico, +45% velocidad de sitio). Roles previos en la misma empresa: Technical SEO Analyst (feb 2023–nov 2024), Content SEO Specialist (nov 2022–feb 2023). |
-| Práctica técnica (Luxemburgo) | Practicante remoto, equipo Marketing & Digital, Philharmonie Luxembourg (30h/semana). Codificación de interfaces basadas en plantillas HTML, scripting para consumir datos del backend en eventos en vivo, configuración de renderizado dinámico de datos inyectados desde servidor en tiempo real, testing de visualización cross-resolución y debugging para estabilidad operativa en vivo. |
-| Proyecto destacado | Trustloop (https://trustlup.netlify.app/, github.com/Sve-nnN/TrustLoop) — proyecto personal, construido solo, TypeScript + HTML/CSS/JS. Plataforma full-stack para que freelancers puedan mostrar reseñas profesionales verificadas (problema real: no había forma fácil de hacerlo), con recolección centralizada y embeds soportados en +50 sitios de clientes, uptime >99.9%. |
-| Skills técnicos | JavaScript/TypeScript + React/Next.js, Python, SQL/Postgres, C++, Kotlin, Java (incl. Spring Boot). Repos GitHub notables además de Trustloop: `dr-angulo-website` (sitio cliente real), `SiembraConnect.API`/`Skeleton-SpringBoot` (Java), `eventify` (Vue), `CA-Chatbot`/`CA-DiscordToTelegram` (bots Python/Telegram), `hosting` (infra propia, Dokploy/Hetzner — la misma que usa este proyecto). |
+| Resumen profesional | Estudiante de Ingeniería de Software en UPC (ciclo 7, me gradúo en diciembre 2027). Llevo 5 años en SEO técnico — empecé en AprendoSEO en 2021, la empresa después se convirtió en Loops Growth — y en paralelo armo software: Next.js, Payload CMS, proyectos propios y sitios de clientes. Ahora busco internships de Software Engineering. |
+| Experiencia más reciente | 5 años en el mismo equipo con dos nombres: arranqué en AprendoSEO en 2021, y desde 2024 es Loops Growth. Ahí llegué a Senior Technical SEO Analyst manejando más de 18 clientes internacionales, incluyendo money.com y Miami Herald. Hacía auditorías técnicas, arreglaba problemas de indexación, y lideré migraciones de varios sitios a Webflow. |
+| Práctica técnica (Luxemburgo) | Práctica remota con el equipo de Marketing & Digital de Philharmonie Luxembourg, 30h por semana. Armaba plantillas HTML para las pantallas de los eventos en vivo, con scripts que jalaban datos del backend en tiempo real, y probaba que todo se viera bien en distintas resoluciones antes de que saliera al aire. |
+| Proyecto destacado | Trustloop (trustlup.netlify.app, github.com/Sve-nnN/TrustLoop) lo armé solo. Quería resolver algo puntual: los freelancers no tienen una forma fácil de mostrar reseñas verificadas. Es full-stack en TypeScript, con un sistema de embeds que usan más de 50 sitios de clientes. |
+| Clientes de desarrollo | Además de Trustloop y la práctica en Luxemburgo, hice sitios/proyectos para clientes: Arianna Lupi, Apturio, Childrenchic, TuMundoSalud, Crédito USS, Wiñaypaq, el consultorio del Dr. Manuel Vargas Hidalgo, Puntada con Amor, Aprendoclub, Pro Torque Diesel, Cresory y Estylopia. |
+| Skills técnicos | JS/TS con React y Next.js, Python, SQL/Postgres, C++, Kotlin, Java (con Spring Boot). En GitHub tengo cerca de 56 repos, desde ejercicios de estructuras de datos en C++ hasta proyectos reales como `dr-angulo-website` (sitio de un cliente real) o `SiembraConnect.API` en Java. |
 
 ## Preguntas comunes (para formularios de aplicación)
 
 | Campo | Valor |
 |-------|-------|
-| Rol buscado | Software Engineering Intern (SWE) — el prompt de auto-apply debe destacar el perfil técnico (UPC + Trustloop + el lado técnico de Loops Growth), no el lado de marketing/growth |
-| Autorización para trabajar en EEUU | No, necesito sponsorship/visa — estudia en UPC (Lima, Perú), no en universidad de EEUU, así que no califica para F-1/CPT/OPT. La vía típica para un internship de verano en EEUU sería una visa J-1 (Exchange Visitor, tipo CIEE/InterExchange) o sponsorship directo de la empresa. |
-| Preferencia de modalidad | Abierto a internships remotas (sin restricción de visa) o presenciales en EEUU (con sponsorship/visa) |
+| Rol buscado | Internship de Software Engineering. En el prompt de auto-apply, destacar el lado técnico: UPC, Trustloop, los clientes de desarrollo, y el lado técnico de SEO (no growth/marketing). |
+| Autorización para trabajar en EEUU | No, necesito sponsorship o visa. Estudio en UPC en Lima, no en una universidad de EEUU, así que no califico para F-1/CPT/OPT. Lo normal sería una visa J-1 (tipo CIEE/InterExchange) o que la empresa patrocine directamente. |
+| Preferencia de modalidad | Abierto a internships remotas (ahí no hay tema de visa) o presenciales en EEUU si la empresa patrocina. |
 
 ## Notas para Claude
 
