@@ -118,11 +118,19 @@ export function SendToAiButton({
   }, [state]);
 
   // Finishes the deferred focus-restore described above, once the trigger
-  // is no longer `disabled`.
+  // is no longer `disabled`. Guarded so it only fires if focus is still
+  // stranded on `<body>` — if the user has since Tab'd to a different
+  // control or the virtualized table recycled/re-measured this row, don't
+  // yank focus back to a trigger the user has moved on from.
+  // `{ preventScroll: true }` avoids scrolling the 16k+-row virtualized
+  // table back to this row out from under the user (fixed per code review
+  // WR-03, 07-REVIEW.md).
   useEffect(() => {
     if (!isPending && restoreFocusPendingRef.current) {
       restoreFocusPendingRef.current = false;
-      triggerRef.current?.focus();
+      if (document.activeElement === document.body) {
+        triggerRef.current?.focus({ preventScroll: true });
+      }
     }
   }, [isPending]);
 
