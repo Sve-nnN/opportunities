@@ -46,9 +46,9 @@
 
 ### Auto-apply asistido (APPLY) — v1.1
 
-- [ ] **APPLY-01**: Cada oportunidad de Internships/Underclassmen tiene un botón "Send to AI"
-- [ ] **APPLY-02**: El botón genera y copia un prompt autocontenido (link de la oportunidad + snapshot del perfil + instrucción de usar Playwright MCP para el llenado + instrucción explícita de revisión humana antes de enviar)
-- [ ] **APPLY-03**: El prompt instruye explícitamente a la sesión de IA a preguntarle a Juan cualquier dato que falte, nunca inventarlo
+- [x] **APPLY-01**: Cada oportunidad de Internships/Underclassmen tiene un botón "Send to AI"
+- [x] **APPLY-02**: El botón genera y copia un prompt autocontenido (link de la oportunidad + snapshot del perfil + instrucción de usar Playwright MCP para el llenado + instrucción explícita de revisión humana antes de enviar)
+- [x] **APPLY-03**: El prompt instruye explícitamente a la sesión de IA a preguntarle a Juan cualquier dato que falte, nunca inventarlo
 
 ### Tracking extendido (TRACK) — v1.1
 
@@ -138,9 +138,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROFILE-03 | Phase 6 | Complete |
 | AUDIT-01 | Phase 6 | Complete |
 | AUDIT-02 | Phase 6 | Complete |
-| APPLY-01 | Phase 7 | Pending |
-| APPLY-02 | Phase 7 | Pending |
-| APPLY-03 | Phase 7 | Pending |
+| APPLY-01 | Phase 7 | Complete |
+| APPLY-02 | Phase 7 | Complete |
+| APPLY-03 | Phase 7 | Complete |
 
 **Coverage:**
 
@@ -149,4 +149,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-09-07*
-*Last updated: 2026-09-08 after v1.1 roadmap creation (Phases 5-7)*
+*Last updated: 2026-09-10 after v1.1 milestone complete (Phases 5-7, 12/12 requirements shipped)*

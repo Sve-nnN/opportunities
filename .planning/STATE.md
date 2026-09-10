@@ -1,21 +1,21 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: v1.1
 milestone_name: Auto-apply asistido con IA
 current_phase: 7
 current_phase_name: Send to AI
-status: executing
-stopped_at: v1.1 ROADMAP.md (Fases 5-7) y STATE.md escritos, REQUIREMENTS.md traceability actualizado a 12/12 mapeado — pendiente de revisión/aprobación del roadmap
-last_updated: "2026-09-08T22:42:46.240Z"
-last_activity: 2026-09-08
-last_activity_desc: Phase 7 execution started
-state_head: 74fcdb547e66094def813bdf06e9f9da17751bb5
+status: verified
+stopped_at: v1.1 completo — 3/3 fases verificadas (passed), 12/12 requirements shipped, pendiente audit/complete-milestone/cleanup
+last_updated: "2026-09-10T19:30:00.000Z"
+last_activity: 2026-09-10
+last_activity_desc: Phase 7 verified, reviewed, secured — milestone v1.1 complete
+state_head: c6b322501db75153fb5b8168b15779f55f3eeed3
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 67
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -25,16 +25,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** Juan abre una sola página y ve, siempre actualizado, qué internships/programas le sirven hoy y qué beneficios .edu no está aprovechando — sin tener que revisar manualmente varios repos de GitHub.
-**Current focus:** Phase 7 — Send to AI
+**Current focus:** v1.1 complete — pending audit/complete-milestone/cleanup
 
 ## Current Position
 
-Phase: 7 (Send to AI) — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase 7
-Last activity: 2026-09-08 — Phase 7 execution started
+Phase: 7 (Send to AI) — VERIFIED ✓ (last of 3 phases)
+Plan: 5 of 5
+Status: All phases verified — ready for milestone audit
+Last activity: 2026-09-10 — Phase 7 verified, reviewed, secured
 
-Progress: [░░░░░░░░░░] 0% (v1.1)
+Progress: [██████████] 100% (v1.1)
 
 ## Performance Metrics
 
@@ -101,7 +101,7 @@ None yet.
 - Verificar en Phase 1 si `Summer2027-Internships` expone datos de deadline parseables (histórico v1.0, no bloqueante para v1.1)
 - ✅ RESUELTO [Phase 3 P2]: Tabla de Internships (16,109 filas) sin virtualización — resuelto con `@tanstack/react-virtual`
 - ⚠️ [Phase 2] Impeccable finish-reviewer/documenter corrieron en modo degradado (inline, sin subagentes) — recomendable una re-revisión independiente cuando el harness lo soporte
-- ⚠️ [Roadmap v1.1 / Phase 6 planning] El payload de "evidencia" para aceptar una transición a `status=submitted` (¿screenshot? ¿URL de confirmación? ¿texto?) no está definido — decisión pendiente para el planning de Phase 6 (research/SUMMARY.md Gaps)
+- ✅ RESUELTO [Phase 6 planning]: El payload de "evidencia" para `status=submitted` quedó definido como `sentFields`/`notes` en el body del callback (sin requerir screenshot) — implementado y verificado en 06-01-PLAN.md/06-VERIFICATION.md
 - ⚠️ [Roadmap v1.1] Manejo de campos de perfil genuinamente sensibles (SSN, historial salarial) queda fuera de v1.1 — no construir cripto especulativa; revisar si hace falta antes de que el perfil crezca con ese tipo de dato (research/SUMMARY.md Gaps, REQUIREMENTS.md Out of Scope)
 
 ## Deferred Items

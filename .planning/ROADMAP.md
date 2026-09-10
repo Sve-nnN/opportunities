@@ -17,7 +17,7 @@ Juan necesita poder mandar cualquier oportunidad (Internships/Underclassmen) a u
 
 - [x] **Phase 5: Perfil y Etapas de Tracking** - Perfil de datos flexible (ver/editar) + nuevas etapas intermedias en el dropdown de estado (completed 2026-09-08)
 - [x] **Phase 6: Callback API de Auto-apply** - Endpoint bearer-secret que escribe estado, perfil y auditoría en una transacción atómica (completed 2026-09-08)
-- [ ] **Phase 7: Send to AI** - Botón que genera y copia el prompt autocontenido para la sesión externa de IA
+- [x] **Phase 7: Send to AI** - Botón que genera y copia el prompt autocontenido para la sesión externa de IA (completed 2026-09-10)
 
 ## Phase Details
 
@@ -73,8 +73,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Generación del prompt: buildApplyPrompt (7 secciones + mitigación de prompt injection) + generateApplyPrompt Server Action (APPLY-02, APPLY-03)
-- [ ] 07-02-PLAN.md — Botón "Send to AI": Tooltip + Popover controlado, wireado en la tabla, columnas redistribuidas, accesibilidad (APPLY-01, APPLY-02)
+- [x] 07-01-PLAN.md — Generación del prompt: buildApplyPrompt (7 secciones + mitigación de prompt injection) + generateApplyPrompt Server Action (APPLY-02, APPLY-03)
+- [x] 07-02-PLAN.md — Botón "Send to AI": Tooltip + Popover controlado, wireado en la tabla, columnas redistribuidas, accesibilidad (APPLY-01, APPLY-02)
 
 **UI hint**: yes
 
@@ -87,5 +87,5 @@ Fases de v1.1 en orden numérico: 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 5. Perfil y Etapas de Tracking | 2/2 | Complete | 2026-09-08 |
 | 6. Callback API de Auto-apply | 1/1 | Complete | 2026-09-08 |
-| 7. Send to AI | 0/2 | Not started | - |
+| 7. Send to AI | 2/2 | Complete | 2026-09-10 |
 </content>
