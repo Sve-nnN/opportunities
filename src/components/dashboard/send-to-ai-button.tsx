@@ -244,7 +244,7 @@ export function SendToAiButton({
         ) : state?.kind === "config_error" ? (
           <div
             role="alert"
-            className="flex items-center gap-2 text-xs text-destructive"
+            className="flex items-center gap-1.5 text-xs text-destructive"
           >
             <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
             <span>{state.message}</span>
