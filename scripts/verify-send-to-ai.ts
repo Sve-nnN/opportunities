@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { eq, isNotNull } from "drizzle-orm";
+import { chromium } from "playwright";
 
 import { generateApplyPrompt } from "../src/app/actions/auto-apply";
 import { db } from "../src/db/client";
@@ -377,13 +378,93 @@ async function verifyHttpRoundTrip(baseUrl: string) {
   }
 }
 
+/**
+ * Task 1 (07-02-PLAN.md): a real Playwright browser click on the mounted
+ * `SendToAiButton` — proves the click actually runs `generateApplyPrompt`
+ * through the real client component and copies the real prompt to the
+ * REAL OS clipboard, not a mock of either layer. Same `chromium.launch()`
+ * pattern as `scripts/verify-a11y.ts`/`capture-finish-screenshots.ts`.
+ *
+ * The generated prompt's section 7 (`buildCallbackSection`,
+ * `src/lib/auto-apply-prompt.ts`) renders as a plain `POST <url>` /
+ * `Authorization: Bearer <secret>` fenced block — it never contains the
+ * literal substring `curl -X POST` (there is no `curl` keyword anywhere in
+ * the real generated prose, confirmed by `grep`). Asserting for the real
+ * marker of that block (`POST .../apply-session` + `Authorization: Bearer`)
+ * proves the same thing 07-02-PLAN.md's literal `curl -X POST` wording
+ * intended — that the real, executable callback block made it into the
+ * clipboard — without asserting a string the shipped 07-01 content never
+ * produces (Rule 1 — bug fix in this test script, not in the already
+ * verified Plan 07-01 prompt-builder output).
+ */
+async function verifyRealBrowserClick(baseUrl: string) {
+  const browser = await chromium.launch();
+  try {
+    const context = await browser.newContext();
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+      origin: baseUrl,
+    });
+    const page = await context.newPage();
+    page.setDefaultTimeout(120_000);
+
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await page.waitForSelector("table");
+
+    const button = page.locator('button[aria-label="Send to AI"]').first();
+    await button.waitFor({ state: "visible", timeout: 30_000 });
+
+    // Extract the SAME row's real `url` from its "Ver fuente" link — the
+    // independent DOM source of truth to compare the clipboard content
+    // against (07-02-PLAN.md action).
+    const rowUrl = await button.evaluate((el) => {
+      const row = el.closest("tr[data-external-id]");
+      const link = row?.querySelector("a[href]");
+      return link ? (link as HTMLAnchorElement).href : null;
+    });
+    assert.ok(
+      rowUrl,
+      "expected the row containing the enabled 'Send to AI' button to also render a 'Ver fuente' link with a real href",
+    );
+
+    await button.click();
+    await page.getByText("Prompt copiado").waitFor({ state: "visible", timeout: 30_000 });
+
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+
+    assert.ok(
+      clipboardText.includes(rowUrl as string),
+      `expected the copied prompt to include the row's real URL (${rowUrl})`,
+    );
+    assert.ok(
+      clipboardText.includes("DATOS CONFIABLES"),
+      'expected the copied prompt to include the profile header "DATOS CONFIABLES"',
+    );
+    assert.ok(
+      /POST .*\/api\/applications\/.*\/apply-session/.test(clipboardText) &&
+        clipboardText.includes("Authorization: Bearer"),
+      "expected the copied prompt to include the real callback block (POST .../apply-session + Authorization: Bearer)",
+    );
+
+    console.log(
+      `PASS: a real browser click (Playwright, clipboard permissions granted) on the "Send to AI" button ran generateApplyPrompt end-to-end and copied a prompt containing the row's real URL (${rowUrl}), the profile header, and the real callback POST block`,
+    );
+  } finally {
+    await browser.close();
+  }
+}
+
 async function main() {
   await verifyDataLayer();
 
   const baseUrl = process.argv[2];
+  const clickMode = process.argv.includes("--click");
   if (baseUrl) {
     await verifyHttpRoundTrip(baseUrl);
     console.log("\nAll send-to-ai HTTP round-trip behaviors verified against a real dev server.");
+
+    if (clickMode) {
+      await verifyRealBrowserClick(baseUrl);
+    }
   } else {
     console.log(
       "[info] no baseUrl argument given — skipping HTTP layer (07-01-PLAN.md Task 2). Run again with a baseUrl (e.g. http://localhost:3921) once `pnpm dev` is up with AUTO_APPLY_CALLBACK_SECRET set.",

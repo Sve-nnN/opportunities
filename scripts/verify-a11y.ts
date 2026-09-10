@@ -108,6 +108,18 @@ function toHex([r, g, b]: [number, number, number]): string {
 
 async function main() {
   const baseUrl = process.argv[2] ?? "http://localhost:3921";
+
+  // Warm-up request BEFORE the timed navigation below (Rule 1 fix, found
+  // live running this script standalone): an idle `next dev` (Turbopack)
+  // process answers its first request after a gap in several seconds
+  // (measured live: ~8s cold vs. ~0.3-0.4s once warm — Postgres pool
+  // reconnect + on-demand route compile, neither of which is what the
+  // `hydrationMs` assertion below is meant to catch). Without this, the
+  // timed measurement conflates that one-time cold-start cost with actual
+  // hydration time, producing a false regression signal unrelated to
+  // dataset size or this plan's changes.
+  await fetch(baseUrl).catch(() => {});
+
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.setDefaultTimeout(120_000);
@@ -431,14 +443,38 @@ async function main() {
   let rowIndexAfterEnd: string | null | undefined = null;
   for (let attempt = 0; attempt < 15; attempt++) {
     await page.waitForTimeout(200);
-    rowIndexAfterEnd = await page.evaluate(() =>
+    const current = await page.evaluate(() =>
       document.activeElement?.getAttribute("data-row-index"),
     );
-    if (rowIndexAfterEnd && Number(rowIndexAfterEnd) > 1000) break;
+    if (current && current !== rowIndexAfterEnd) {
+      rowIndexAfterEnd = current;
+    } else if (rowIndexAfterEnd !== null) {
+      // Settled: same index 2 polls in a row after it first changed.
+      break;
+    }
   }
   assert.ok(
-    Number(rowIndexAfterEnd) > 1000,
-    `End should jump near the end of the 16,109+-row list, got row index ${rowIndexAfterEnd}`,
+    rowIndexAfterEnd !== null && Number(rowIndexAfterEnd) > 1,
+    `End should move roving-tabindex focus well past row index 1, got ${rowIndexAfterEnd}`,
+  );
+  // DEVIATION (Rule 1 — bug fix, found live running this script standalone):
+  // the plan/comment this replaced asserted `> 1000`, a leftover expectation
+  // from before Phase 4 (04-05-PLAN.md) added real Postgres LIMIT/OFFSET
+  // pagination — `rows.length` passed into VirtualizedOpportunitiesTable is
+  // now capped at PAGE_SIZE (100 in src/app/page.tsx), never the full
+  // 16,109+-row dataset, so "> 1000" can never pass again regardless of
+  // correctness. Proving End reached the TRUE last row (not just "some
+  // large number") without hardcoding the current page size: a further
+  // ArrowDown past End must stay clamped at the same index.
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(200);
+  const rowIndexAfterExtraDown = await page.evaluate(() =>
+    document.activeElement?.getAttribute("data-row-index"),
+  );
+  assert.equal(
+    rowIndexAfterExtraDown,
+    rowIndexAfterEnd,
+    "ArrowDown pressed again after End should stay clamped at the same (last) row index, proving End reached the true end of the current page's rows",
   );
 
   await page.keyboard.press("Home");
@@ -519,6 +555,57 @@ async function main() {
   assert.ok(afterPopoverClose.visible, "the element focused after closing the NotesPopover must be visible");
   console.log(
     `[pass] NotesPopover operable with Enter to open, Escape to close, focus returned to <${afterPopoverClose.tag} aria-label="${afterPopoverClose.ariaLabel}"> (no trap, no loss)`,
+  );
+
+  // --- 10. SendToAiButton (07-02-PLAN.md Task 3): same focused row, one
+  // more Tab stop after NotesPopover, Enter opens, Escape closes without a
+  // focus trap or focus loss ---------------------------------------------
+  await page.keyboard.press("Tab"); // NotesPopover trigger -> SendToAiButton trigger
+  const sendToAiLabel = await page.evaluate(
+    () => document.activeElement?.getAttribute("aria-label") ?? "",
+  );
+  assert.ok(
+    sendToAiLabel === "Send to AI" ||
+      sendToAiLabel === "Reenviar prompt" ||
+      sendToAiLabel.includes("sin link de aplicación"),
+    `Tab from the NotesPopover should reach the SendToAiButton trigger next, got aria-label="${sendToAiLabel}"`,
+  );
+  console.log(`[pass] Tab from NotesPopover reached the SendToAiButton trigger (aria-label="${sendToAiLabel}")`);
+
+  await page.keyboard.press("Enter"); // open the Send to AI popover
+  await page.waitForTimeout(300);
+  const sendToAiPopoverContent = await page.evaluate(() => {
+    const live = document.querySelector('[aria-live="polite"]');
+    const alertEl = document.querySelector('[role="alert"]');
+    return {
+      hasLive: Boolean(live && live.textContent?.trim()),
+      hasAlert: Boolean(alertEl && alertEl.textContent?.trim()),
+    };
+  });
+  assert.ok(
+    sendToAiPopoverContent.hasLive || sendToAiPopoverContent.hasAlert,
+    "Enter on the SendToAiButton trigger should open a popover with either an aria-live status or a role=alert error (any of the 4 states is valid)",
+  );
+  console.log(
+    `[pass] SendToAiButton popover opened with real content (aria-live=${sendToAiPopoverContent.hasLive}, role=alert=${sendToAiPopoverContent.hasAlert})`,
+  );
+
+  await page.keyboard.press("Escape"); // close, must return focus to the trigger without a trap
+  await page.waitForTimeout(300);
+  const afterSendToAiClose = await page.evaluate(() => ({
+    tag: document.activeElement?.tagName,
+    ariaLabel: document.activeElement?.getAttribute("aria-label"),
+    visible: document.activeElement
+      ? (document.activeElement as HTMLElement).offsetParent !== null
+      : false,
+  }));
+  assert.ok(
+    afterSendToAiClose.tag && afterSendToAiClose.tag !== "BODY",
+    "focus must not fall back to <body> after closing the SendToAiButton popover with Escape (focus trap/loss check)",
+  );
+  assert.ok(afterSendToAiClose.visible, "the element focused after closing the SendToAiButton popover must be visible");
+  console.log(
+    `[pass] SendToAiButton popover operable with Enter to open, Escape to close, focus returned to <${afterSendToAiClose.tag} aria-label="${afterSendToAiClose.ariaLabel}"> (no trap, no loss)`,
   );
 
   await browser.close();
