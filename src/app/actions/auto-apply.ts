@@ -70,12 +70,24 @@ export async function generateApplyPrompt(
 
 /**
  * `NEXT_PUBLIC_APP_URL` wins when set (used as-is, trailing slash trimmed
- * so callers can always append `/api/...` without a double slash). Falls
- * back to the request's own `x-forwarded-host`/`host` header + protocol —
- * `headers()` is available inside Server Actions in Next.js 16 (confirmed
- * via Context7 `/vercel/next.js`). `x-forwarded-proto` defaults to `https`
- * unless the resolved host looks like a local dev host, matching how this
- * app is actually run locally (`pnpm dev` on plain HTTP).
+ * so callers can always append `/api/...` without a double slash). This is
+ * the only trustworthy source in production — set it in Dokploy.
+ *
+ * If unset, falls back to the request's own `host` header — deliberately
+ * NEVER `x-forwarded-host`. `host` cannot be overridden by client-side
+ * `fetch()` (it's a forbidden header name in the Fetch spec — the browser
+ * always sends the real connection host). `x-forwarded-host` IS
+ * attacker-settable (XSS, a malicious extension, or a hand-crafted direct
+ * call to this Server Action) and this value feeds straight into the
+ * `POST ${baseUrl}/.../apply-session` line embedded in the generated curl
+ * block, which also carries `AUTO_APPLY_CALLBACK_SECRET` — trusting a
+ * spoofable header here would let an attacker redirect where the secret is
+ * sent (fixed per code review CR-01, 07-REVIEW.md). `x-forwarded-proto` is
+ * not attacker-relevant the same way (it only picks http/https), so it's
+ * still read with a `https` default unless the resolved host looks like a
+ * local dev host, matching how this app is actually run locally (`pnpm dev`
+ * on plain HTTP). `headers()` is available inside Server Actions in
+ * Next.js 16 (confirmed via Context7 `/vercel/next.js`).
  */
 async function resolveBaseUrl(): Promise<string> {
   const configured = process.env.NEXT_PUBLIC_APP_URL;
@@ -84,8 +96,7 @@ async function resolveBaseUrl(): Promise<string> {
   }
 
   const headerList = await headers();
-  const host =
-    headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost";
+  const host = headerList.get("host") ?? "localhost";
   const isLocalHost = host.includes("localhost") || host.includes("127.0.0.1");
   const proto =
     headerList.get("x-forwarded-proto") ?? (isLocalHost ? "http" : "https");
