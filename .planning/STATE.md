@@ -110,7 +110,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| *(none)* | | | | |
+| Security (accepted) | `AUTO_APPLY_CALLBACK_SECRET` es un secret maestro fijo embebido en cada prompt copiado, no un token de un solo uso por aplicación (T-06-07/T-07-02) | Confirmado con Juan post-audit — dejar como está | 2026-09-10 | v1.1 |
+| Security (accepted) | `profile_fields` sin cifrado a nivel de aplicación en la misma Postgres compartida (T-05-03) — revisar si algún día se agrega un campo genuinamente sensible (SSN, datos financieros) | Confirmado con Juan post-audit — dejar como está | 2026-09-10 | v1.1 |
+| Design (accepted) | "Esperar el OK de Juan antes de enviar" es instrucción de texto en el prompt, no un gate técnico forzado por la app (T-07-05) | Confirmado con Juan post-audit — dejar como está, coincide con el Out of Scope de auto-submit | 2026-09-10 | v1.1 |
 
 ## Session Continuity
 
