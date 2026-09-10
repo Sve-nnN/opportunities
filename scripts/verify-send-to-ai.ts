@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 
 import { generateApplyPrompt } from "../src/app/actions/auto-apply";
 import { db } from "../src/db/client";
-import { opportunities } from "../src/db/schema";
+import { applicationHistory, applications, opportunities } from "../src/db/schema";
 import { buildApplyPrompt } from "../src/lib/auto-apply-prompt";
 
 /**
@@ -228,14 +228,162 @@ async function verifyDataLayer() {
   console.log("\nAll send-to-ai data/content-layer behaviors verified.");
 }
 
+interface ParsedCurlBlock {
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  body: string;
+}
+
+/**
+ * Programmatic parser for the section-7 code-fence block (07-01-PLAN.md
+ * Task 2: "extraer PROGRAMÁTICAMENTE ... el método, la URL, el header
+ * Authorization y el body JSON ... no reescribir el contrato a mano").
+ * Only one triple-backtick fence exists in the whole prompt (buildCallbackSection
+ * in src/lib/auto-apply-prompt.ts) — every other code-ish reference in the
+ * prompt (`.value`, `submitted`, etc) uses single backticks, so this is safe
+ * to grab unambiguously.
+ */
+function parseCurlBlock(prompt: string): ParsedCurlBlock {
+  const fenceMatch = prompt.match(/```\n([\s\S]*?)\n```/);
+  assert.ok(fenceMatch, "expected exactly one triple-backtick code fence in the prompt");
+  const lines = fenceMatch[1].split("\n");
+
+  const [method, url] = lines[0].split(" ");
+  assert.ok(method && url, `expected a "METHOD URL" first line, got "${lines[0]}"`);
+
+  const headers: Record<string, string> = {};
+  let i = 1;
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "") {
+      i++;
+      break;
+    }
+    const colonIndex = line.indexOf(":");
+    assert.ok(colonIndex > 0, `expected a "Header: value" line, got "${line}"`);
+    headers[line.slice(0, colonIndex).trim()] = line.slice(colonIndex + 1).trim();
+  }
+
+  const body = lines.slice(i).join("\n").trim();
+  assert.ok(body.length > 0, "expected a non-empty JSON body after the headers");
+
+  return { method, url, headers, body };
+}
+
+async function resolveHttpTestExternalId(): Promise<string> {
+  const [row] = await db
+    .select({ externalId: opportunities.externalId })
+    .from(opportunities)
+    .where(isNotNull(opportunities.url))
+    .limit(1);
+  assert.ok(row, "expected at least 1 real opportunities row with a non-empty url");
+  return row.externalId;
+}
+
+async function getAppRow(externalId: string) {
+  const [row] = await db
+    .select({ status: applications.status, notes: applications.notes })
+    .from(applications)
+    .where(eq(applications.opportunityExternalId, externalId));
+  return row;
+}
+
+async function getHistoryRowsFor(externalId: string) {
+  return db
+    .select()
+    .from(applicationHistory)
+    .where(eq(applicationHistory.opportunityExternalId, externalId));
+}
+
+/**
+ * Task 2: round-trip the REAL curl block extracted from a REAL
+ * generateApplyPrompt() call against the REAL Phase 6 endpoint — proves the
+ * copy-paste contract works end to end, not just that the string looks
+ * well-formatted (07-01-PLAN.md "no reconstruir el request desde cero").
+ */
+async function verifyHttpRoundTrip(baseUrl: string) {
+  const secret = process.env.AUTO_APPLY_CALLBACK_SECRET;
+  assert.ok(
+    secret,
+    "AUTO_APPLY_CALLBACK_SECRET must be set in this script's environment to run the HTTP round-trip layer, matching the value the dev server was started with",
+  );
+
+  const externalId = await resolveHttpTestExternalId();
+  const originalApp = await getAppRow(externalId);
+  const originalHistory = await getHistoryRowsFor(externalId);
+
+  try {
+    const result = await generateApplyPrompt(externalId);
+    assert.equal(result.ok, true, "expected generateApplyPrompt to succeed for a real externalId");
+    if (!result.ok) return;
+
+    const parsed = parseCurlBlock(result.prompt);
+    assert.equal(parsed.method, "POST");
+    assert.equal(
+      parsed.url,
+      `${baseUrl}/api/applications/${externalId}/apply-session`,
+      "expected the extracted curl URL to match the real callback route contract",
+    );
+    assert.equal(parsed.headers["Authorization"], `Bearer ${secret}`);
+    assert.equal(parsed.headers["Content-Type"], "application/json");
+
+    // Execute EXACTLY what the prompt generated — no rebuilding the request.
+    const response = await fetch(parsed.url, {
+      method: parsed.method,
+      headers: parsed.headers,
+      body: parsed.body,
+    });
+    const json = (await response.json()) as { ok: boolean };
+    assert.equal(response.status, 200, `expected 200 from the real curl round-trip, got ${response.status}`);
+    assert.equal(json.ok, true, "expected {ok:true} from the real callback route");
+
+    const afterHistory = await getHistoryRowsFor(externalId);
+    assert.equal(
+      afterHistory.length,
+      originalHistory.length + 1,
+      "expected exactly 1 new application_history row after the real curl round-trip",
+    );
+    const originalHistoryIds = new Set(originalHistory.map((row) => row.id));
+    const newRow = afterHistory.find((row) => !originalHistoryIds.has(row.id));
+    assert.ok(newRow, "expected to find the newly-inserted application_history row");
+    assert.equal(newRow?.status, "auto_fill_in_progress");
+
+    const afterApp = await getAppRow(externalId);
+    assert.equal(afterApp?.status, "auto_fill_in_progress");
+
+    console.log(
+      "PASS: the real curl block extracted from generateApplyPrompt's output, executed literally against POST /api/applications/[externalId]/apply-session, returns 200 {ok:true} and writes a real application_history row",
+    );
+  } finally {
+    if (originalApp) {
+      await db
+        .update(applications)
+        .set({ status: originalApp.status, notes: originalApp.notes })
+        .where(eq(applications.opportunityExternalId, externalId));
+    } else {
+      await db.delete(applications).where(eq(applications.opportunityExternalId, externalId));
+    }
+
+    const originalHistoryIds = new Set(originalHistory.map((row) => row.id));
+    const currentHistory = await getHistoryRowsFor(externalId);
+    for (const row of currentHistory) {
+      if (!originalHistoryIds.has(row.id)) {
+        await db.delete(applicationHistory).where(eq(applicationHistory.id, row.id));
+      }
+    }
+
+    console.log(`Cleanup: restored applications/application_history state for ${externalId}.`);
+  }
+}
+
 async function main() {
   await verifyDataLayer();
 
   const baseUrl = process.argv[2];
   if (baseUrl) {
-    console.log(
-      "[info] baseUrl argument given — HTTP round-trip layer (07-01-PLAN.md Task 2) not yet implemented.",
-    );
+    await verifyHttpRoundTrip(baseUrl);
+    console.log("\nAll send-to-ai HTTP round-trip behaviors verified against a real dev server.");
   } else {
     console.log(
       "[info] no baseUrl argument given — skipping HTTP layer (07-01-PLAN.md Task 2). Run again with a baseUrl (e.g. http://localhost:3921) once `pnpm dev` is up with AUTO_APPLY_CALLBACK_SECRET set.",
