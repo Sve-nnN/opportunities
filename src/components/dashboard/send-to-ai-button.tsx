@@ -131,19 +131,31 @@ export function SendToAiButton({
     setState(null);
     setOpen(true);
     startTransition(async () => {
-      const result = await generateApplyPrompt(opportunityExternalId);
-      if (!result.ok) {
-        setState({ kind: "config_error", message: result.message });
-        return;
-      }
       try {
-        // T-07-05/T-07-06 (threat_model): the prompt (secret embedded)
-        // never leaves this local browser context — clipboard or, on
-        // failure, a local-only selectable textarea fallback.
-        await navigator.clipboard.writeText(result.prompt);
-        setState({ kind: "copied" });
+        const result = await generateApplyPrompt(opportunityExternalId);
+        if (!result.ok) {
+          setState({ kind: "config_error", message: result.message });
+          return;
+        }
+        try {
+          // T-07-05/T-07-06 (threat_model): the prompt (secret embedded)
+          // never leaves this local browser context — clipboard or, on
+          // failure, a local-only selectable textarea fallback.
+          await navigator.clipboard.writeText(result.prompt);
+          setState({ kind: "copied" });
+        } catch {
+          setState({ kind: "clipboard_failed", prompt: result.prompt });
+        }
       } catch {
-        setState({ kind: "clipboard_failed", prompt: result.prompt });
+        // The Server Action itself threw (e.g. a Postgres connection
+        // failure) — without this outer catch, the rejected promise had
+        // nothing to catch it, leaving the popover stuck on "Copiando…"
+        // with no recovery path and no user-facing error (fixed per code
+        // review WR-02, 07-REVIEW.md).
+        setState({
+          kind: "config_error",
+          message: "No se pudo generar el prompt. Intenta de nuevo.",
+        });
       }
     });
   }
