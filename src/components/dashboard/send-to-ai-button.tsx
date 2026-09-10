@@ -76,6 +76,16 @@ export function SendToAiButton({
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<TerminalState | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // Set when the Popover closed (Escape/outside-click) while the trigger
+  // button was still `disabled={isPending}` — a genuinely-disabled DOM
+  // button element cannot receive focus at all, so `onCloseAutoFocus`'s
+  // immediate `.focus()` call silently no-ops if the click happened to
+  // close mid-flight. Deferring the restore until `isPending` flips back to
+  // false (below) fixes the resulting permanent focus-loss-to-<body>
+  // instead of fighting the `disabled` attribute itself, which must stay
+  // true during `copying` per 07-UI-SPEC.md.
+  const restoreFocusPendingRef = useRef(false);
 
   const isReattempt = IN_PROGRESS_STATUSES.has(status);
   // 07-UI-SPEC.md "Trigger states": the disabled reason is folded into the
@@ -107,6 +117,15 @@ export function SendToAiButton({
     }
   }, [state]);
 
+  // Finishes the deferred focus-restore described above, once the trigger
+  // is no longer `disabled`.
+  useEffect(() => {
+    if (!isPending && restoreFocusPendingRef.current) {
+      restoreFocusPendingRef.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [isPending]);
+
   function handleClick() {
     if (!url || isPending) return;
     setState(null);
@@ -135,6 +154,7 @@ export function SendToAiButton({
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
+              ref={triggerRef}
               type="button"
               variant="ghost"
               size="icon"
@@ -151,12 +171,33 @@ export function SendToAiButton({
         <TooltipContent>{ariaLabel}</TooltipContent>
       </Tooltip>
       {/*
-        Escape-to-close + focus-return-to-trigger is Radix Popover's native
-        behavior — not overridden here (same as NotesPopover).
+        DEVIATION (Rule 1 — bug fix, found live via this plan's own Task 3
+        `verify-a11y.ts` keyboard walkthrough extension, root-caused with
+        page-console diagnostics before fixing): pressing Escape while the
+        `generateApplyPrompt` transition is STILL in flight (`isPending`,
+        the "Copiando…" state) closes the Popover while the trigger button
+        is `disabled={isPending}` — a genuinely-disabled DOM button element
+        cannot receive focus at all, so Radix's own native
+        focus-on-close-restore silently no-ops on it, permanently stranding
+        focus on `<body>`. `onCloseAutoFocus` + `restoreFocusPendingRef`
+        (declared above) explicitly defer the restore until `isPending`
+        flips back to false instead of fighting the `disabled` attribute,
+        which must stay true during `copying` per 07-UI-SPEC.md.
       */}
       <PopoverContent
         align="start"
         className={state?.kind === "clipboard_failed" ? "w-96" : "w-80"}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (triggerRef.current && !triggerRef.current.disabled) {
+            triggerRef.current.focus();
+          } else {
+            // Still `disabled={isPending}` at the instant of close — defer
+            // to the `isPending` effect above (see `restoreFocusPendingRef`
+            // comment).
+            restoreFocusPendingRef.current = true;
+          }
+        }}
       >
         {isPending ? (
           <p aria-live="polite" className="text-xs text-muted-foreground">

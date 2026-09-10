@@ -338,19 +338,26 @@ function HeaderRow() {
   // result so the visual column balance doesn't shift noticeably.
   return (
     <TableRow className="hover:bg-transparent">
-      <TableHead scope="col" className={`${stickyHeadClass} w-[16%]`}>
+      <TableHead scope="col" className={`${stickyHeadClass} w-[15%]`}>
         Company
       </TableHead>
-      <TableHead scope="col" className={`${stickyHeadClass} w-[28%]`}>
+      <TableHead scope="col" className={`${stickyHeadClass} w-[27%]`}>
         Title
       </TableHead>
-      <TableHead scope="col" className={`${stickyHeadClass} w-[18%]`}>
+      <TableHead scope="col" className={`${stickyHeadClass} w-[16%]`}>
         Location
       </TableHead>
       <TableHead scope="col" className={`${stickyHeadClass} w-[10%]`}>
         Status
       </TableHead>
-      <TableHead scope="col" className={`${stickyHeadClass} w-[18%]`}>
+      {/*
+        22% (up from 18%, 07-UI-SPEC.md "Layout — Row Placement"): a third
+        size-8 control (SendToAiButton) now shares this cell with
+        StatusDropdown's w-[9.75rem] trigger and NotesPopover — Company/
+        Title/Location shrink by 1/1/2 points respectively to make room,
+        still summing to 100%.
+      */}
+      <TableHead scope="col" className={`${stickyHeadClass} w-[22%]`}>
         Postulación
       </TableHead>
       <TableHead scope="col" className={`${stickyHeadClass} w-[10%] text-right`}>
