@@ -42,9 +42,15 @@ export async function generateApplyPrompt(
 
   // Defensive, in practice unreachable from the UI (the button only ever
   // renders for a real row) — the Server Action still never blindly trusts
-  // its own argument (07-01-PLAN.md threat_model T-07-01).
+  // its own argument (07-01-PLAN.md threat_model T-07-01). The `!opportunity.url`
+  // check enforces "Oportunidades sin url: botón deshabilitado" server-side
+  // too (07-CONTEXT.md) — the disabled `<button>` is a client-only UX hint
+  // and is not a trust boundary; without this, any real externalId for a
+  // URL-less opportunity still produced a curl block embedding the real
+  // secret with no application page to justify it (fixed per code review
+  // WR-01, 07-REVIEW.md).
   const opportunity = await getOpportunityByExternalId(parsedExternalId.data);
-  if (!opportunity) {
+  if (!opportunity || !opportunity.url) {
     return { ok: false, message: "No se encontró la oportunidad" };
   }
 
