@@ -3,7 +3,7 @@
 Espejo legible del contenido real de la tabla `profile_fields` (Postgres, dev + prod). Este archivo es solo referencia/versionado — la fuente de verdad operativa es la DB, porque es de ahí que `generateApplyPrompt` (Phase 7) arma el snapshot real que va en cada prompt de "Send to AI". Si algo cambia acá, hay que reflejarlo también en la DB (pestaña "Perfil" de la app, o pedirle a Claude que lo actualice).
 
 **Última actualización:** 2026-09-10
-**Fuente:** CV 2026.pdf + entrevista directa con Juan
+**Fuente:** CV 2026.pdf + certificado de práctica Philharmonie Luxembourg + GitHub (github.com/Sve-nnN) + entrevista directa con Juan
 
 ## Contacto
 
@@ -36,9 +36,11 @@ Espejo legible del contenido real de la tabla `profile_fields` (Postgres, dev + 
 
 | Campo | Valor |
 |-------|-------|
-| Resumen profesional | Estudiante de Ingeniería de Software (UPC, ciclo 7) con experiencia profesional como Technical SEO Analyst, un rol con fuerte componente técnico (auditorías de arquitectura de sitio, indexación, Core Web Vitals, migraciones de plataforma) — no marketing de contenidos puro. Busca internships de Software Engineering para 2027. |
+| Resumen profesional | Estudiante de Ingeniería de Software (UPC, ciclo 7) con experiencia profesional como Technical SEO Analyst, un rol con fuerte componente técnico (auditorías de arquitectura de sitio, indexación, Core Web Vitals, migraciones de plataforma) — no marketing de contenidos puro. Además, práctica remota en desarrollo web (Philharmonie Luxembourg) y ~56 repos públicos en GitHub que abarcan desde estructuras de datos en C++ hasta apps full-stack en TypeScript/React, Vue, Java/Spring Boot y bots en Python. Busca internships de Software Engineering para 2027. |
 | Experiencia más reciente | Senior Technical SEO Analyst @ Loops Growth (remoto, nov 2024 – ene 2026) — gestión de +18 clientes internacionales, resolución de issues críticos de indexación, liderazgo de migraciones a Webflow (+25% tráfico orgánico, +45% velocidad de sitio). Roles previos en la misma empresa: Technical SEO Analyst (feb 2023–nov 2024), Content SEO Specialist (nov 2022–feb 2023). |
-| Proyecto destacado | Trustloop (https://trustlup.netlify.app/) — plataforma full-stack para recolección centralizada de reseñas profesionales, embebible en +50 sitios web de clientes, uptime >99.9% |
+| Práctica técnica (Luxemburgo) | Practicante remoto, equipo Marketing & Digital, Philharmonie Luxembourg (30h/semana). Codificación de interfaces basadas en plantillas HTML, scripting para consumir datos del backend en eventos en vivo, configuración de renderizado dinámico de datos inyectados desde servidor en tiempo real, testing de visualización cross-resolución y debugging para estabilidad operativa en vivo. |
+| Proyecto destacado | Trustloop (https://trustlup.netlify.app/, github.com/Sve-nnN/TrustLoop) — proyecto personal, construido solo, TypeScript + HTML/CSS/JS. Plataforma full-stack para que freelancers puedan mostrar reseñas profesionales verificadas (problema real: no había forma fácil de hacerlo), con recolección centralizada y embeds soportados en +50 sitios de clientes, uptime >99.9%. |
+| Skills técnicos | JavaScript/TypeScript + React/Next.js, Python, SQL/Postgres, C++, Kotlin, Java (incl. Spring Boot). Repos GitHub notables además de Trustloop: `dr-angulo-website` (sitio cliente real), `SiembraConnect.API`/`Skeleton-SpringBoot` (Java), `eventify` (Vue), `CA-Chatbot`/`CA-DiscordToTelegram` (bots Python/Telegram), `hosting` (infra propia, Dokploy/Hetzner — la misma que usa este proyecto). |
 
 ## Preguntas comunes (para formularios de aplicación)
 
