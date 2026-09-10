@@ -1,5 +1,19 @@
 # Milestones
 
+## v1.1 Auto-apply asistido con IA (Shipped: 2026-09-10)
+
+**Phases completed:** 3 phases, 5 plans, 12 tasks
+
+**Key accomplishments:**
+
+- profile_fields EAV table + Drizzle queries/Server Actions + "Perfil" dashboard tab with grouped view, inline autosave edit, ad hoc add-field, and 6-field bulk seed load
+- Extended `APPLICATION_STATUSES` to 9 values with 3 read-only auto-apply intermediate states, restricted `StatusDropdown`'s selectable options and `updateApplicationStatus`'s Zod schema to the original 6, and added a violet-tint trigger background so an auto-set status is visually distinguishable from a hand-picked one — no DB migration required.
+- Atomic bearer-secret callback endpoint (`POST /api/applications/[externalId]/apply-session`) that lets an external Claude Code auto-apply session report status + learned profile fields + an audit trail in one all-or-nothing Postgres transaction.
+- `generateApplyPrompt(externalId)` Server Action que arma un prompt Markdown de 7 secciones (perfil real, mitigación verbatim de "lethal trifecta" contra prompt injection, y un bloque curl real que se probó ejecutándolo literalmente contra el callback de Phase 6) — sin escribir nunca en Postgres.
+- `SendToAiButton` — Tooltip de 3 estados + Popover controlado de 4 estados (copiando/copiado/portapapeles-falló/error-de-config), wireado en cada fila de Internships/Underclassmen junto a StatusDropdown/NotesPopover, verificado con un click real de Playwright que lee el portapapeles real del sistema operativo.
+
+---
+
 ## v1.0 MVP (Shipped: 2026-09-08)
 
 **Phases completed:** 4 phases, 12 plans, 23 tasks

@@ -1,91 +1,31 @@
 # Roadmap: Opportunities Hub
 
-## Milestone: v1.1 — Auto-apply asistido con IA
+## Milestones
 
-**v1.0 MVP ya está en producción** (Fases 1-4, shipped 2026-09-08). Su historial completo vive archivado en `.planning/milestones/v1.0-ROADMAP.md` y `.planning/milestones/v1.0-phases/`. Este archivo contiene únicamente las fases de v1.1, continuando la numeración desde la Fase 4.
-
-## Overview
-
-Juan necesita poder mandar cualquier oportunidad (Internships/Underclassmen) a una sesión externa de Claude Code que llene el formulario de aplicación por él, con revisión humana obligatoria antes de cualquier envío. El camino va de adentro hacia afuera: primero se construye la base de datos que todo lo demás necesita — el perfil flexible de Juan (editable a mano) y las nuevas etapas de tracking que reflejan una sesión de auto-apply a medias — porque tanto el endpoint de callback como el botón "Send to AI" dependen de que ese perfil y esos estados ya existan y sean observables. Sobre esa base se construye el endpoint de callback gateado por secreto, que escribe de forma atómica estado, perfil y bitácora de auditoría cuando una sesión externa termina (o queda a medias). Por último se construye el botón "Send to AI" y la generación del prompt que arranca todo el ciclo, cerrando el loop completo: click → prompt copiado → sesión externa de Claude Code con Playwright MCP → revisión de Juan → callback → panel actualizado.
+- ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-09-08)
+- ✅ **v1.1 Auto-apply asistido con IA** — Phases 5-7 (shipped 2026-09-10)
 
 ## Phases
 
-**Phase Numbering:**
+<details>
+<summary>✅ v1.0 MVP (Phases 1-4) — SHIPPED 2026-09-08</summary>
 
-- Integer phases (5, 6, 7): Planned v1.1 work, continuando desde la Fase 4 de v1.0
-- Decimal phases (5.1, 5.2): Inserciones urgentes (marcadas con INSERTED)
+- [x] Phase 1: Ingestion Foundation (2/2 plans) — completed 2026-09-07
+- [x] Phase 2: Discovery UI (3/3 plans) — completed 2026-09-07
+- [x] Phase 3: Application Tracking (2/2 plans) — completed 2026-09-07
+- [x] Phase 4: Deploy (5/5 plans) — completed 2026-09-08
 
-- [x] **Phase 5: Perfil y Etapas de Tracking** - Perfil de datos flexible (ver/editar) + nuevas etapas intermedias en el dropdown de estado (completed 2026-09-08)
-- [x] **Phase 6: Callback API de Auto-apply** - Endpoint bearer-secret que escribe estado, perfil y auditoría en una transacción atómica (completed 2026-09-08)
-- [x] **Phase 7: Send to AI** - Botón que genera y copia el prompt autocontenido para la sesión externa de IA (completed 2026-09-10)
+Full detail: `.planning/milestones/v1.0-ROADMAP.md`
 
-## Phase Details
+</details>
 
-### Phase 5: Perfil y Etapas de Tracking
+<details>
+<summary>✅ v1.1 Auto-apply asistido con IA (Phases 5-7) — SHIPPED 2026-09-10</summary>
 
-**Goal**: Juan tiene un perfil de datos flexible que puede ver y editar manualmente, y el tracking de postulaciones soporta las etapas intermedias de una sesión de auto-apply a medias.
-**Depends on**: Phase 4 (v1.0 shipped)
-**Requirements**: PROFILE-01, PROFILE-02, TRACK-05, TRACK-06
-**Success Criteria** (what must be TRUE):
+- [x] Phase 5: Perfil y Etapas de Tracking (2/2 plans) — completed 2026-09-08
+- [x] Phase 6: Callback API de Auto-apply (1/1 plan) — completed 2026-09-08
+- [x] Phase 7: Send to AI (2/2 plans) — completed 2026-09-10
 
-  1. Juan puede ver y editar su perfil de datos como pares clave-valor flexibles, sin necesidad de un schema rígido
-  2. El perfil arranca con una carga inicial de datos básicos (nombre, email, CV, links)
-  3. El dropdown de estado de una postulación muestra las nuevas etapas intermedias (`auto_fill_in_progress` / `ready_to_review` / `submitted`) — de solo lectura ahí, seleccionables únicamente vía el callback de Phase 6
-  4. `applications.status` acepta esas etapas intermedias además de las 6 ya existentes
+Full detail: `.planning/milestones/v1.1-ROADMAP.md`
 
-**Plans**: 2 plans
-
-Plans:
-- [x] 05-01-PLAN.md — Perfil de datos flexible: schema `profile_fields`, queries, Server Actions, pestaña "Perfil" (ver/agregar/editar/carga inicial) (PROFILE-01, PROFILE-02)
-- [x] 05-02-PLAN.md — Etapas intermedias de tracking: extender `APPLICATION_STATUSES`, restringir selección manual, extender `StatusDropdown` (TRACK-05, TRACK-06)
-
-**UI hint**: yes
-
-### Phase 6: Callback API de Auto-apply
-
-**Goal**: Una sesión externa de Claude Code puede reportar el resultado de un auto-apply (completo o a medias) y el panel de Juan queda actualizado de forma atómica, validada del lado del servidor y auditable.
-**Depends on**: Phase 5
-**Requirements**: CALLBACK-01, CALLBACK-02, PROFILE-03, AUDIT-01, AUDIT-02
-**Success Criteria** (what must be TRUE):
-
-  1. Un endpoint API gateado por bearer secret actualiza estado, notas y perfil en una sola transacción atómica (todo o nada)
-  2. El endpoint valida transiciones de estado y payload del lado del servidor, sin confiar ciegamente en el caller (quien llama es la interpretación de un LLM de una página web arbitraria)
-  3. Los campos nuevos que una sesión de auto-apply aprende (porque un sitio los pidió) se guardan automáticamente en el perfil para la próxima vez
-  4. Cada escritura del callback deja un registro de exactamente qué datos se enviaron a esa aplicación específica, no solo el perfil global
-  5. Ese historial se referencia siempre por `opportunity_external_id`, nunca por el id serial de cache
-
-**Plans**: 1 plan
-
-Plans:
-- [x] 06-01-PLAN.md — Endpoint atómico `POST /api/applications/[externalId]/apply-session`: tabla `application_history` + migración, validación de transición/colisión, upsert de perfil, y verificación de datos + HTTP real (CALLBACK-01, CALLBACK-02, PROFILE-03, AUDIT-01, AUDIT-02)
-
-### Phase 7: Send to AI
-
-**Goal**: Juan puede iniciar el ciclo de auto-apply asistido con un clic, generando un prompt autocontenido y seguro para pegar en una sesión externa de Claude Code.
-**Depends on**: Phase 5, Phase 6
-**Requirements**: APPLY-01, APPLY-02, APPLY-03
-**Success Criteria** (what must be TRUE):
-
-  1. Cada oportunidad de Internships/Underclassmen muestra un botón "Send to AI"
-  2. Al hacer clic, se genera y copia un prompt con el link de la oportunidad, un snapshot del perfil, instrucción de usar Playwright MCP para el llenado, e instrucción explícita de pedir el OK de Juan antes de enviar
-  3. El prompt instruye explícitamente a la sesión de IA a preguntarle a Juan cualquier dato que falte, nunca inventarlo
-
-**Plans**: 2 plans
-
-Plans:
-- [x] 07-01-PLAN.md — Generación del prompt: buildApplyPrompt (7 secciones + mitigación de prompt injection) + generateApplyPrompt Server Action (APPLY-02, APPLY-03)
-- [x] 07-02-PLAN.md — Botón "Send to AI": Tooltip + Popover controlado, wireado en la tabla, columnas redistribuidas, accesibilidad (APPLY-01, APPLY-02)
-
-**UI hint**: yes
-
-## Progress
-
-**Execution Order:**
-Fases de v1.1 en orden numérico: 5 → 6 → 7
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 5. Perfil y Etapas de Tracking | 2/2 | Complete | 2026-09-08 |
-| 6. Callback API de Auto-apply | 1/1 | Complete | 2026-09-08 |
-| 7. Send to AI | 2/2 | Complete | 2026-09-10 |
-</content>
+</details>
