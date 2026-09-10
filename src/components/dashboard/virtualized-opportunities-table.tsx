@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { NotesPopover } from "@/components/dashboard/notes-popover";
+import { SendToAiButton } from "@/components/dashboard/send-to-ai-button";
 import { StatusDropdown } from "@/components/dashboard/status-dropdown";
 import { StatusPill } from "@/components/dashboard/status-pill";
 import {
@@ -287,6 +288,12 @@ export function VirtualizedOpportunitiesTable({
                     <NotesPopover
                       opportunityExternalId={row.externalId}
                       notes={record?.notes ?? null}
+                      tabIndex={focusedIndex === virtualRow.index ? undefined : -1}
+                    />
+                    <SendToAiButton
+                      opportunityExternalId={row.externalId}
+                      url={row.url}
+                      status={record?.status ?? "not_applied"}
                       tabIndex={focusedIndex === virtualRow.index ? undefined : -1}
                     />
                   </div>
