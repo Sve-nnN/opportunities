@@ -185,6 +185,26 @@ export async function opportunityExistsByExternalId(
   return rows.length > 0;
 }
 
+/**
+ * Full row lookup for the Phase 7 "Send to AI" Server Action
+ * (`generateApplyPrompt`) — unlike `opportunityExistsByExternalId` (which
+ * only answers a boolean), the prompt builder needs real `title`/`company`/
+ * `url` values, and it must read them server-side rather than trust
+ * whatever a client component would otherwise pass in (07-01-PLAN.md
+ * threat_model T-07-01). Same plain `.limit(1)` style as
+ * `opportunityExistsByExternalId` above; returns `undefined` for an
+ * externalId with no matching row.
+ */
+export async function getOpportunityByExternalId(externalId: string) {
+  const rows = await db
+    .select()
+    .from(opportunities)
+    .where(eq(opportunities.externalId, externalId))
+    .limit(1);
+
+  return rows[0];
+}
+
 /** Same contract as `getDistinctCategories`, for `roleType`. */
 export async function getDistinctRoleTypes(
   source: OpportunitySource,
